@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+import twitter
+import sys
+import os.path
+
+CONSUMER_KEY='hFSJjRrlRH59atewULqpQ'
+CONSUMER_SECRET='JDtgrFGyWbTyCLUj22oXC4jWlrH278JSYSvQnrPU'
+
+def get_oauth():
+    global CONSUMER_KEY, CONSUMER_SECRET
+    # parse_qsl moved to urlparse module in v2.6
+    try:
+      from urlparse import parse_qsl
+    except:
+      from cgi import parse_qsl
+
+    import oauth2 as oauth
+
+    REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
+    ACCESS_TOKEN_URL  = 'https://api.twitter.com/oauth/access_token'
+    AUTHORIZATION_URL = 'https://api.twitter.com/oauth/authorize'
+    SIGNIN_URL        = 'https://api.twitter.com/oauth/authenticate'
+
+    signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
+    oauth_consumer             = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
+    oauth_client               = oauth.Client(oauth_consumer)
+    resp, content = oauth_client.request(REQUEST_TOKEN_URL, 'GET')
+    if resp['status'] != '200':
+        print 'Invalid respond from Twitter requesting temp token: %s' % resp['status']
+        return None
+    request_token = dict(parse_qsl(content))
+    print ''
+    print 'Please visit this Twitter page and retrieve the pincode to be used'
+    print 'in the next step to obtaining an Authentication Token:'
+    print ''
+    print '%s?oauth_token=%s' % (AUTHORIZATION_URL, request_token['oauth_token'])
+    print ''
+    pincode = raw_input('Pincode? ')
+    token = oauth.Token(request_token['oauth_token'], request_token['oauth_token_secret'])
+    token.set_verifier(pincode)
+
+    oauth_client  = oauth.Client(oauth_consumer, token)
+    resp, content = oauth_client.request(ACCESS_TOKEN_URL, method='POST', body='oauth_verifier=%s' % pincode)
+    access_token  = dict(parse_qsl(content))
+
+    if resp['status'] != '200':
+        print 'The request for a Token did not succeed: %s' % resp['status']
+        return None
+    else:
+        print ''
+        print 'Your Twitter Access Token key: %s' % access_token['oauth_token']
+        print '          Access Token secret: %s' % access_token['oauth_token_secret']
+        print ''
+        return [access_token['oauth_token'], access_token['oauth_token_secret']]
+
+if __name__ == '__main__':
+    config_file = os.path.join(os.path.expanduser('~'),
+                               '.'+os.path.basename(__file__))
+
+    if not os.path.isfile(config_file):
+        token = get_oauth()
+        if not token:
+            sys.exit(1)
+        else:
+            print 'Saving configurations in \'%s\'' % config_file
+            f = open(config_file, 'w')
+            f.write(' '.join(token))
+            f.close
+    else:
+        f = open(config_file)
+        token = f.readline().split()
+        f.close()
+
+    api = twitter.Api(consumer_key=CONSUMER_KEY,
+                      consumer_secret=CONSUMER_SECRET,
+                      access_token_key= token[0],
+                      access_token_secret= token[1])
+
+    argv_len = len(sys.argv)
+    statuses = None
+    if argv_len>1:
+        if sys.argv[1] == 'public':
+            statuses = api.GetPublicTimeline()
+        elif sys.argv[1] in ('mention', 'mentions'):
+            args = sys.argv[2:3]
+            statuses = apply(api.GetMentions,[None, None]+args)
+        elif sys.argv[1] in ('reply', 'replies'):
+            args = sys.argv[2:]
+            statuses = apply(api.GetReplies, [None, None]+ args)
+        elif sys.argv[1] in ('message', 'messages'):
+            messages = api.GetDirectMessages()
+            messages.reverse()
+            for m in messages:
+                line = '[%s] %s' % (m.sender_screen_name, m.text)
+                print line.encode('utf-8')
+        elif sys.argv[1] == 'post':
+            status = api.PostUpdate(' '.join(sys.argv[2:]))
+        elif sys.argv[1] in ('friend', 'friends'):
+            users = api.GetFriends()
+            for u in users:
+                print u.screen_name.encode('utf-8')
+        elif sys.argv[1] in ('follower', 'followers'):
+            followers = api.GetFollowers()
+            for f in followers:
+                print f.screen_name.encode('utf-8')
+        elif sys.argv[1] in ('favorites', 'favorite'):
+            args = sys.argv[2:4]
+            statuses = apply(api.GetFavorites, args)
+        elif sys.argv[1] in ('status', 'statuses'):
+            args = sys.argv[2:4]
+            if len(args)==0:
+                statuses = api.GetUserTimeline()
+            elif len(args)==1:
+                statuses = api.GetUserTimeline(id=args[0])
+            elif len(args)==2:
+                statuses = api.GetUserTimeline(id=args[0], page=args[1])
+        elif sys.argv[1] in ('send') and argv_len>3:
+            args = [sys.argv[2]] + [' '.join(sys.argv[3:])]
+            status = apply(api.PostDirectMessage, args)
+        elif sys.argv[1] in ('search') and argv_len>2:
+            # todo
+            args = sys.argv[2:]
+            statuses = apply(api.GetSearch, args)
+            statuses = api.GetSearch(term='nice')
+        # todo
+        # elif sys.argv[1] in ('trend', 'trends'):
+        #     args = sys.argv[2:]
+        #     trends = apply(api.GetTrendsDaily, args)
+        #     print trends[0][0]
+        else:
+            print '''
+Available commands:
+    public
+    mention[s] [PAGE]
+    repl[y,ies] [PAGE]
+    message[s]
+    post        MESSAGE
+    friend[s]
+    follower[s]
+    favorite[s] [USER] [PAGE]
+    status      [USER] [PAGE]
+    send        USER MESSAGE
+    search      TERM
+'''
+    else:
+        statuses = api.GetFriendsTimeline()
+    if statuses:
+        statuses.reverse()
+        for s in statuses:
+            line = "[%s] %s" % (s.user.screen_name, s.text)
+            print line.encode('utf-8')
