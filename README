@@ -1,0 +1,12 @@
+Available commands:
+	public
+	mention[s] [PAGE]
+	repl[y,ies] [PAGE]
+	message[s]
+	post        MESSAGE
+	friend[s]
+	follower[s]
+	favorite[s] [USER] [PAGE]
+	status      [USER] [PAGE]
+	send        USER MESSAGE
+	search      TERM
