@@ -56,7 +56,6 @@ def get_oauth():
 if __name__ == '__main__':
     config_file = os.path.join(os.path.expanduser('~'),
                                '.'+os.path.basename(__file__))
-
     if not os.path.isfile(config_file):
         token = get_oauth()
         if not token:
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     argv_len = len(sys.argv)
     statuses = None
     if argv_len>1:
-        if sys.argv[1] == 'public':
+        if sys.argv[1] in ('public'):
             statuses = api.GetPublicTimeline()
         elif sys.argv[1] in ('mention', 'mentions'):
             args = sys.argv[2:3]
@@ -121,17 +120,26 @@ if __name__ == '__main__':
             # todo
             args = sys.argv[2:]
             statuses = apply(api.GetSearch, args)
-            statuses = api.GetSearch(term='nice')
-        # todo
-        # elif sys.argv[1] in ('trend', 'trends'):
-        #     args = sys.argv[2:]
-        #     trends = apply(api.GetTrendsDaily, args)
-        #     print trends[0][0]
+            # statuses = api.GetSearch(term='nice')
+        elif sys.argv[1] in ('rate'):
+            for k,v in api.GetRateLimitStatus().items():
+                print "%s: %s" % (k, v)
+        elif sys.argv[1] in ('profile'):
+            if len(sys.argv)>2:
+                user = api.GetUser(sys.argv[2])
+                for k,v in user.AsDict().items():
+                    print "%s: %s" % (k, v)
         else:
-            print '''
+            try:
+                page = int(sys.argv[1])
+                statuses = api.GetFriendsTimeline(page=page)
+            except  ValueError:
+                print '''
+Usage: ptwit [COMMAND | PAGE]
+
 Available commands:
     public
-    mention[s] [PAGE]
+    mention[s]  [PAGE]
     repl[y,ies] [PAGE]
     message[s]
     post        MESSAGE
@@ -141,6 +149,8 @@ Available commands:
     status      [USER] [PAGE]
     send        USER MESSAGE
     search      TERM
+    rate
+    help
 '''
     else:
         statuses = api.GetFriendsTimeline()

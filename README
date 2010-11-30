@@ -1,22 +1,30 @@
+Requirements:
+    python-twitter 0.8
+    oauth2 1.2.0
+
 Examples:
-post status
-	ptwit post hello world
-get public timeline
-	ptwit public
-get mentions
-	ptwit mentions
-send message:
-	ptwit send someone hello, ptwit is awesome
+    post status
+        ptwit post hello world
+    get public timeline
+        ptwit public
+    get mentions
+        ptwit mentions
+    send message:
+        ptwit send someone hello, ptwit is awesome
+
+Usage: ptwit [COMMAND | PAGE]
 
 Available commands:
-	public
-	mention[s] [PAGE]
-	repl[y,ies] [PAGE]
-	message[s]
-	post        MESSAGE
-	friend[s]
-	follower[s]
-	favorite[s] [USER] [PAGE]
-	status      [USER] [PAGE]
-	send        USER MESSAGE
-	search      TERM
+    public
+    mention[s]  [PAGE]
+    repl[y,ies] [PAGE]
+    message[s]
+    post        MESSAGE
+    friend[s]
+    follower[s]
+    favorite[s] [USER] [PAGE]
+    status      [USER] [PAGE]
+    send        USER MESSAGE
+    search      TERM
+    rate
+    help
