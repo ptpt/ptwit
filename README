@@ -1,3 +1,13 @@
+Examples:
+post status
+	ptwit post hello world
+get public timeline
+	ptwit public
+get mentions
+	ptwit mentions
+send message:
+	ptwit send someone hello, ptwit is awesome
+
 Available commands:
 	public
 	mention[s] [PAGE]
