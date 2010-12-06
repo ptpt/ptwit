@@ -1,161 +1,360 @@
 #!/usr/bin/env python
-import twitter
-import sys
-import os.path
+import sys, os
+import twitter as twit
+import webbrowser
 
-CONSUMER_KEY='hFSJjRrlRH59atewULqpQ'
-CONSUMER_SECRET='JDtgrFGyWbTyCLUj22oXC4jWlrH278JSYSvQnrPU'
+DEFAULT_STATUS_PFORMAT = '[%user.name%] %text%'
+DEFAULT_MESSAGE_PFORMAT = '[%user.name%] %text%'
+DEFAULT_USER_PFORMAT = '%name%'
 
-def get_oauth():
-    global CONSUMER_KEY, CONSUMER_SECRET
-    # parse_qsl moved to urlparse module in v2.6
-    try:
-      from urlparse import parse_qsl
-    except:
-      from cgi import parse_qsl
-
-    import oauth2 as oauth
-
-    REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
-    ACCESS_TOKEN_URL  = 'https://api.twitter.com/oauth/access_token'
-    AUTHORIZATION_URL = 'https://api.twitter.com/oauth/authorize'
-    SIGNIN_URL        = 'https://api.twitter.com/oauth/authenticate'
-
-    signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
-    oauth_consumer             = oauth.Consumer(key=CONSUMER_KEY, secret=CONSUMER_SECRET)
-    oauth_client               = oauth.Client(oauth_consumer)
-    resp, content = oauth_client.request(REQUEST_TOKEN_URL, 'GET')
-    if resp['status'] != '200':
-        print 'Invalid respond from Twitter requesting temp token: %s' % resp['status']
-        return None
-    request_token = dict(parse_qsl(content))
-    print ''
-    print 'Please visit this Twitter page and retrieve the pincode to be used'
-    print 'in the next step to obtaining an Authentication Token:'
-    print ''
-    print '%s?oauth_token=%s' % (AUTHORIZATION_URL, request_token['oauth_token'])
-    print ''
-    pincode = raw_input('Pincode? ')
-    token = oauth.Token(request_token['oauth_token'], request_token['oauth_token_secret'])
-    token.set_verifier(pincode)
-
-    oauth_client  = oauth.Client(oauth_consumer, token)
-    resp, content = oauth_client.request(ACCESS_TOKEN_URL, method='POST', body='oauth_verifier=%s' % pincode)
-    access_token  = dict(parse_qsl(content))
-
-    if resp['status'] != '200':
-        print 'The request for a Token did not succeed: %s' % resp['status']
-        return None
-    else:
-        print ''
-        print 'Your Twitter Access Token key: %s' % access_token['oauth_token']
-        print '          Access Token secret: %s' % access_token['oauth_token_secret']
-        print ''
-        return [access_token['oauth_token'], access_token['oauth_token_secret']]
-
-if __name__ == '__main__':
-    config_file = os.path.join(os.path.expanduser('~'),
-                               '.'+os.path.basename(__file__))
-    if not os.path.isfile(config_file):
-        token = get_oauth()
-        if not token:
-            sys.exit(1)
-        else:
-            print 'Saving configurations in \'%s\'' % config_file
-            f = open(config_file, 'w')
-            f.write(' '.join(token))
-            f.close
-    else:
-        f = open(config_file)
-        token = f.readline().split()
-        f.close()
-
-    api = twitter.Api(consumer_key=CONSUMER_KEY,
-                      consumer_secret=CONSUMER_SECRET,
-                      access_token_key= token[0],
-                      access_token_secret= token[1])
-
-    argv_len = len(sys.argv)
-    statuses = None
-    if argv_len>1:
-        if sys.argv[1] in ('public'):
-            statuses = api.GetPublicTimeline()
-        elif sys.argv[1] in ('mention', 'mentions'):
-            args = sys.argv[2:3]
-            statuses = apply(api.GetMentions,[None, None]+args)
-        elif sys.argv[1] in ('reply', 'replies'):
-            args = sys.argv[2:]
-            statuses = apply(api.GetReplies, [None, None]+ args)
-        elif sys.argv[1] in ('message', 'messages'):
-            messages = api.GetDirectMessages()
-            messages.reverse()
-            for m in messages:
-                line = '[%s] %s' % (m.sender_screen_name, m.text)
-                print line.encode('utf-8')
-        elif sys.argv[1] == 'post':
-            status = api.PostUpdate(' '.join(sys.argv[2:]))
-        elif sys.argv[1] in ('friend', 'friends'):
-            users = api.GetFriends()
-            for u in users:
-                print u.screen_name.encode('utf-8')
-        elif sys.argv[1] in ('follower', 'followers'):
-            followers = api.GetFollowers()
-            for f in followers:
-                print f.screen_name.encode('utf-8')
-        elif sys.argv[1] in ('favorites', 'favorite'):
-            args = sys.argv[2:4]
-            statuses = apply(api.GetFavorites, args)
-        elif sys.argv[1] in ('status', 'statuses'):
-            args = sys.argv[2:4]
-            if len(args)==0:
-                statuses = api.GetUserTimeline()
-            elif len(args)==1:
-                statuses = api.GetUserTimeline(id=args[0])
-            elif len(args)==2:
-                statuses = api.GetUserTimeline(id=args[0], page=args[1])
-        elif sys.argv[1] in ('send') and argv_len>3:
-            args = [sys.argv[2]] + [' '.join(sys.argv[3:])]
-            status = apply(api.PostDirectMessage, args)
-        elif sys.argv[1] in ('search') and argv_len>2:
-            # todo
-            args = sys.argv[2:]
-            statuses = apply(api.GetSearch, args)
-            # statuses = api.GetSearch(term='nice')
-        elif sys.argv[1] in ('rate'):
-            for k,v in api.GetRateLimitStatus().items():
-                print "%s: %s" % (k, v)
-        elif sys.argv[1] in ('profile'):
-            if len(sys.argv)>2:
-                user = api.GetUser(sys.argv[2])
-                for k,v in user.AsDict().items():
-                    print "%s: %s" % (k, v)
-        else:
-            try:
-                page = int(sys.argv[1])
-                statuses = api.GetFriendsTimeline(page=page)
-            except  ValueError:
-                print '''
+help_message = '''
 Usage: ptwit [COMMAND | PAGE]
 
 Available commands:
     public
     mention[s]  [PAGE]
-    repl[y,ies] [PAGE]
+    repl[y|ies] [PAGE]
     message[s]
     post        MESSAGE
     friend[s]
     follower[s]
-    favorite[s] [USER] [PAGE]
+    favorite[s] user[=| ][USER] page[=| ][PAGE]
     status      [USER] [PAGE]
     send        USER MESSAGE
     search      TERM
     rate
     help
 '''
+
+alias = {'public': lambda api, argv:\
+             twit.Api.GetPublicTimeline(api, get_args(argv)),
+         'mention': lambda api, argv:\
+             twit.Api.GetMentions(api, page=argv[0] if len(argv)>0 else None),
+         'reply': lambda api, argv:\
+             twit.Api.GetReplies(api, page=argv[0] if len(argv)>0 else None),
+         'message': lambda api, argv:\
+             twit.Api.GetDirectMessages(api, page=argv[0] if len(argv)>0 else None),
+         'post': lambda api, argv:\
+             twit.Api.PostUpdate(api, status=' '.join(argv)),
+         'friend': lambda api, argv:\
+             twit.Api.GetFriends(api, user=argv[0] if len(argv)>0 else None),
+         'follower': lambda api, argv:\
+             twit.Api.GetFollowers(api, *argv),
+         'favorite': lambda api, argv:\
+             twit.Api.GetFavorites(api, *argv),
+         'status': lambda api, argv:\
+             twit.Api.GetUserTimeline(api,
+                                      id=argv[0] if len(argv)>0 else None,
+                                      **get_args(argv[1:]) if len(argv)>1 else {}),
+         'send': lambda api, argv:\
+             twit.Api.PostDirectMessage(api, user=argv[0], text=' '.join(argv[1:])),
+         'search': lambda api, argv:\
+             twit.Api.GetSearch(api, term=' '.join(argv)),
+         'rate': lambda api, argv: twit.Api.GetRateLimitStatus(api),
+         'profile': lambda api, argv: twit.Api.GetUser(api, user=argv[0])}
+
+def dict_recursion_value(tag, status):
+    if tag in status and type(status[tag]) is not dict:
+        return status[tag].encode('utf-8')\
+            if type(status[tag]) in [str, unicode] else str(status[tag])
     else:
-        statuses = api.GetFriendsTimeline()
-    if statuses:
-        statuses.reverse()
-        for s in statuses:
-            line = "[%s] %s" % (s.user.screen_name, s.text)
-            print line.encode('utf-8')
+        t = tag.split('.', 1)
+        if len(t)!=2:
+            return None
+        if t[0] in status and type(status[t[0]]) is dict:
+            return dict_recursion_value(t[1], status[t[0]])
+
+def dict_format(item, format, find_date=None):
+    state = -1
+    fstr = ''
+    for i in xrange(len(format)):
+        if format[i]=='%':
+            if state<0:
+                state = i+1
+            else:
+                tag = format[state:i]
+                if tag=='':
+                    fstr = fstr + '%'
+                else:
+                    if find_date and len(tag)==1 and tag in 'aAbBcdHIJmMpSUwWxXyYZ':
+                        from time import strftime, strptime
+                        value = strftime('%' + tag,
+                                         strptime(find_date(item),
+                                                  '%a %b %d %H:%M:%S +0000 %Y'))
+                    else:
+                        value = dict_recursion_value(tag, item)
+                    fstr = fstr + ('%'+tag+'%' if value is None else value)
+                state = -1
+        elif state==-1:
+            fstr = fstr+format[i]
+    if state>=0:
+        fstr = fstr + '%' + format[state:]
+    return fstr
+
+def get_args(argv):
+    args = dict()
+    key, value = None, None
+    for i in xrange(len(argv)):
+        if key is None:
+            sp = argv[i].split('=',1)
+            if len(sp)==2:
+                key, value = sp
+                args[key] = value
+                key, value = None, None
+            else:
+                key = argv[i]
+        else:
+            value = argv[i]
+            args[key] = value
+            key, value = None, None
+    return args
+
+def get_oauth(consumer_key, consumer_secret):
+    try:
+      from urlparse import parse_qsl
+    except:
+      from cgi import parse_qsl
+    import oauth2 as oauth
+
+    signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
+    oauth_consumer = oauth.Consumer(key=consumer_key, secret=consumer_secret)
+    oauth_client = oauth.Client(oauth_consumer)
+    resp, content = oauth_client.request(twit.REQUEST_TOKEN_URL, 'GET')
+
+    if resp['status'] != '200':
+        print >>sys.stderr, 'Invalid respond from Twitter requesting temp token: %s' % resp['status']
+        return None
+    request_token = dict(parse_qsl(content))
+    webbrowser.open_new_tab('%s?oauth_token=%s' % (twit.AUTHORIZATION_URL, request_token['oauth_token']))
+    pincode = raw_input('Pincode? ')
+    token = oauth.Token(request_token['oauth_token'], request_token['oauth_token_secret'])
+    token.set_verifier(pincode)
+
+    oauth_client  = oauth.Client(oauth_consumer, token)
+    resp, content = oauth_client.request(twit.ACCESS_TOKEN_URL,
+                                         method='POST',
+                                         body='oauth_verifier=%s' % pincode)
+    access_token  = dict(parse_qsl(content))
+
+    if resp['status'] != '200':
+        print >>sys.stderr, 'The request for a Token did not succeed: %s' % resp['status']
+        return None
+    else:
+        return [access_token['oauth_token'], access_token['oauth_token_secret']]
+
+def config_read(filename):
+    result = dict()
+    if os.path.isfile(filename):
+        f = open(filename)
+    else:
+        return result
+    for line in f.read().split('\n'):
+        if line.strip()=='': continue
+        sp = line.split('=', 1)
+        if len(sp)==2:
+            result[sp[0].strip()] = sp[1].strip()
+    f.close
+    return result
+
+def config_write(filename, **kargs):
+    f = open(filename, 'w')
+    f.write('\n'.join([k+'='+str(v)
+                       for k,v in kargs.items()
+                       if v is not None])+'\n')
+    f.close
+    return kargs
+
+def config_update(filename, overwrite, **kargs):
+    modified = False
+    config_dict = config_read(filename)\
+        if os.path.isfile(filename) else dict()
+    for k,v in kargs.items():
+        if (k in config_dict) and overwrite and (v is None):
+            del config_dict[k]
+            modified = True
+        if (overwrite or (k not in config_dict))\
+                and (v is not None):
+            config_dict[k] = v
+            modified = True
+    if modified:
+        config_write(filename, **config_dict)
+    return config_dict
+
+def get_consumer():
+    return raw_input('Consumer key: '), raw_input('Consumer secret: ')
+
+def get_dir_create(dir_name):
+    if not os.path.isdir(dir_name):
+        try:
+            os.mkdir(dir_name)
+        except OSError:
+            print >> sys.stderr,\
+                'not able to create %s' % dir_name
+            sys.exit(1)
+    return dir_name
+
+def print_output(output, print_format):
+    output_type = type(output)
+    if output_type is list:
+        for i in output:
+            print_output(i, print_format)
+    elif output_type in [twit.User, twit.DirectMessage, twit.Status]:
+        print dict_format(output.AsDict(), print_format[output_type],
+                          lambda x: x['created_at'])
+    elif output_type is dict:
+        for k,v in output.items():
+            if v is not None:
+                print "%s: %s".encode('utf-8') % (k, v)
+    elif output_type is not None:
+        print str(output).encode('utf-8')
+
+if __name__ == '__main__':
+    specified_account, specified_pformat, specified_consumer = [None]*3
+    default_account, default_consumer, default_token = [None]*3
+    exit_code = 0
+
+    argv = sys.argv[1:]
+    while not argv==[]:
+        try:
+            if argv[0]=='-u':
+                specified_account = argv[1]
+            elif argv[0]=='-f':
+                specified_pformat = argv[1]
+            elif argv[0]=='-c':
+                specified_consumer = argv[1]
+            else:
+                break
+        except IndexError:
+            print help_message
+            sys.exit(1)
+        argv = argv[2:]
+
+    config_dir = get_dir_create(os.path.join(os.path.expanduser('~'),
+                                             '.'+os.path.basename(__file__)))
+    config_file = os.path.join(config_dir, 'config')
+
+    global_config_dict, local_config_dict  = dict(), dict()
+
+    if os.path.isfile(config_file):
+        global_config_dict = config_read(config_file)
+        if 'account' in global_config_dict:
+            default_account = global_config_dict['account']
+
+    if specified_account or default_account:
+        account_config_dir = get_dir_create(os.path.join(config_dir, 'accounts'))
+        account_config_file = os.path.join(account_config_dir,
+                                           specified_account or default_account)
+        if os.path.isfile(account_config_file):
+            local_config_dict = config_read(account_config_file)
+        else:
+            print >>sys.stderr, '%s\'s config file not found'\
+                % (specified_account or default_account)
+            if (not specified_account) and default_account:
+                # delete this account
+                config_update(config_file, True, account=None)
+            sys.exit(1)
+
+    status_pformat, message_pformat, user_pformat = [None]*3
+    config_dict = local_config_dict.copy()
+    config_dict.update(global_config_dict)
+    for k,v in config_dict.items():
+        if k=='token'             : default_token = map(str.strip, v.split())
+        elif k=='account'         : default_account = v
+        elif k=='consumer'        : default_consumer = map(str.strip, v.split())
+        elif k=='status_pformat'  : status_pformat = v
+        elif k=='message_pformat' : message_pformat = v
+        elif k=='user_pformat'    : user_pformat = v
+
+    print_format = {twit.User: specified_pformat or user_pformat or DEFAULT_USER_PFORMAT,
+                    twit.Status: specified_pformat or status_pformat or DEFAULT_STATUS_PFORMAT,
+                    twit.DirectMessage: specified_pformat or message_pformat or DEFAULT_MESSAGE_PFORMAT}
+
+    output = None
+    if len(argv)>=1 and argv[0]=='default':
+        if len(argv)==1:
+            output = config_dict
+        elif len(argv)==2:
+            if argv[1]=='global':
+                output = global_config_dict
+            elif argv[1]=='local':
+                if specified_account or default_account:
+                    output = local_config_dict
+                else:
+                    print >>sys.stderr, 'default account not found'
+                    sys.exit(1)
+            elif argv[1] in config_dict.keys():
+                output = {argv[1]: config_dict[argv[1]]}
+            else:
+                sys.exit(1)
+        else:
+            output = local_config_dict if specified_account else global_config_dict
+            if argv[1]=='delete':
+                output.update(dict([(x, None) for x in argv[2:]]))
+            else:
+                output.update(get_args(argv[1:]))
+    if output is not None:
+        if specified_account:
+            config_update(account_config_file, True, **local_config_dict)
+        else:
+            config_update(config_file, True, **global_config_dict)
+        print_output(output, print_format)
+        sys.exit(0)
+
+    try:
+        if default_consumer is None:
+            default_consumer = get_consumer()
+            local_config_dict.update({'consumer': ' '.join(default_consumer)})
+        if default_token is None:
+            default_token = get_oauth(*default_consumer)
+            if not default_token: sys.exit(1)
+            local_config_dict.update({'token': ' '.join(default_token)})
+    except KeyboardInterrupt:
+        print
+        sys.exit(1)
+
+    api = twit.Api(consumer_key        = default_consumer[0],
+                   consumer_secret     = default_consumer[1],
+                   access_token_key    = default_token[0],
+                   access_token_secret = default_token[1])
+
+    if not (default_account or specified_account):
+        default_account     = api.VerifyCredentials().screen_name
+        account_config_dir  = get_dir_create(os.path.join(config_dir, 'accounts'))
+        account_config_file = os.path.join(account_config_dir, default_account)
+        global_config_dict.update({'account':default_account})
+
+    try:
+        if len(argv)>0:
+            if argv[0] in dir(twit.Api) and argv[0][0]!='_':
+                output = getattr(twit.Api, argv[0])(api, **get_args(argv[1:]))
+            elif argv[0] in alias:
+                output = alias[argv[0]](api, argv[1:])
+            else:
+                output = api.GetFriendsTimeline(page=int(argv[0]))
+        else:
+            output = api.GetFriendsTimeline()
+    except (ValueError, TypeError):
+        print >>sys.stderr, help_message
+        output = None
+        exit_code = 1
+    except twit.TwitterError as e:
+        print >>sys.stderr, e.args[0]
+        if e.args[0]=='Incorrect signature':
+            if default_consumer:
+                if 'consumer' in local_config_dict:
+                    local_config_dict.update({'consumer': None})
+                else:
+                    global_config_dict.update({'consumer': None})
+        elif e.args[0]=='Invalid / expired Token':
+            if default_token:
+                if 'token' in local_config_dict:
+                    local_config_dict.update({'token': None})
+        else:
+            output = None
+            exit_code = 1
+
+    print_output(output, print_format)
+
+    config_update(config_file, True, **global_config_dict)
+    config_update(account_config_file, True, **local_config_dict)
+    sys.exit(exit_code)
