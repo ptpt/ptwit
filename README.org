@@ -1,0 +1,57 @@
+* Requirements and Installation:
+  #+BEGIN_SRC example
+  pip install python-twitter
+  pip install oauth2
+  pip install ptwit
+  #+END_SRC example
+
+* Usage examples:
+** Twitter commands
+   Post status:
+   #+BEGIN_SRC example
+   ptwit post hello world
+   ptwit post < tweet.txt
+   #+END_SRC
+
+   Get public timeline:
+   #+BEGIN_SRC example
+   ptwit public
+   #+END_SRC
+   
+   Get mentions or replies:
+   #+BEGIN_SRC example
+   ptwit mention
+   ptwit reply 2 # replies at page 2
+   #+END_SRC
+
+   Send message:
+   #+BEGIN_SRC example
+   ptwit send someone hello, ptwit is awesome
+   cat private.txt | ptwit send someone
+   ptwit send < mail.txt
+   #+END_SRC
+   =mail.txt= must start with recipient's name
+
+** User management
+   Display configs:
+   #+BEGIN_SRC example
+    ptwit config global
+    ptwit config local
+    ptwit config
+   #+END_SRC
+   Show current user:
+   #+BEGIN_SRC example
+    ptwit config user
+   #+END_SRC
+   Create user config:
+   #+BEGIN_SRC example
+    ptwit config new
+   #+END_SRC
+   Delete config:
+   #+BEGIN_SRC example
+   ptwit config delete consumer
+   #+END_SRC
+   Change default user to someone
+   #+BEGIN_SRC example
+   ptwit config user someone
+   #+end_SRC example
