@@ -1,8 +1,19 @@
-* Requirements:
-  #+BEGIN_SRC example
-  pip install oauth2
-  pip install python-twitter
-  #+END_SRC example
+* Requirements and installation:
+  1. A twitter acount
+  2. A twitter application registered at https://dev.twitter.com/apps
+** Installation
+   Install oauth2 and python-twitter
+    #+BEGIN_SRC example
+    pip install oauth2
+    pip install python-twitter
+    #+END_SRC example
+     
+    Download ptwit
+    #+BEGIN_SRC example
+    git clone git://github.com/ptpt/ptwit.git
+    #+END_SRC example
+
+    Have fun
 
 * Usage examples:
 ** Twitter commands
@@ -13,7 +24,6 @@
    
    Get friends timeline:
    #+BEGIN_SRC example
-   ptwit
    ptwit timeline
    #+END_SRC
    
