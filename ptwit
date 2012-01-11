@@ -282,7 +282,7 @@ class ProfileCommands(object):
 
 
 class TwitterCommands(object):
-    def __init__(self, api, args=None, user_config=None, global_config=None):
+    def __init__(self, api, args, user_config=None, global_config=None):
         self.api = api
         self.args = args
         self.user_config = user_config
