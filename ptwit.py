@@ -299,7 +299,7 @@ class TwitterCommands(object):
                  self.user_config.get_config('format', 'user') or\
                  self.global_config.get_config('format', 'user') or\
                  PTWIT_FORMAT_USER
-        print format_dictionary(format, user)
+        print format_dictionary(format, user).encode('utf-8')
 
     def _print_users(self, users):
         for user in users:
@@ -313,7 +313,7 @@ class TwitterCommands(object):
                  PTWIT_FORMAT_TWEET
         print format_dictionary(
             format, tweet,
-            date=strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
+            date=strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -341,7 +341,7 @@ class TwitterCommands(object):
                  PTWIT_FORMAT_MESSAGE
         print format_dictionary(
             format, message,
-            date=strptime(message['created_at'], '%a %b %d %H:%M:%S +0000 %Y'))
+            date=strptime(message['created_at'], '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_messages(self, messages):
         for message in messages:
