@@ -263,8 +263,8 @@ class ProfileCommands(object):
 
     def login(self):
         if self.args.profile_name is None:
-            pass
-        if self.args.profile_name in Profile.get_all():
+            login(self.args, None, self.global_profile)
+        elif self.args.profile_name in Profile.get_all():
             self.args.use_global_profile = True
             self.args.call = 'set'
             self.args.section = 'profile'
@@ -456,12 +456,9 @@ class TwitterCommands(object):
 
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description='Twitter command-line.', prog=os.path.basename(__file__),
-        add_help=False)
-    parser.add_argument('-h', action='store_true', dest='help', help='show this help message and exit')
+    parser = argparse.ArgumentParser(description='Twitter command-line.', prog=os.path.basename(__file__))
     parser.add_argument('-p', dest='specified_profile', metavar='profile', action='store', help='specify a profile')
     parser.add_argument('-f', dest='specified_format', metavar='format', help='print format')
-    parser.add_argument('-g', action='store_true', dest='use_global_profile', help='apply global configuration only')
     # todo: default command
     # twitter commands
     subparsers = parser.add_subparsers(title='twitter commands')
@@ -538,6 +535,7 @@ def parse_args(argv):
     p.set_defaults(type=TwitterCommands, function='search')
     # profile commands
     profile_parser = subparsers.add_parser('profile', help='manage profiles')
+    profile_parser.add_argument('-g', action='store_true', dest='use_global_profile', help='apply global configuration only')
     profile_subparsers = profile_parser.add_subparsers(title='profile', help='profile commands')
     # todo default profile command
     # profile set
@@ -562,43 +560,21 @@ def parse_args(argv):
     p = profile_subparsers.add_parser('clear', help='clear profiles')
     p.add_argument('profiles', nargs='+')
     p.set_defaults(type=ProfileCommands, function='clear')
-    args = parser.parse_args(argv)
-    if args.help:
-        parser.print_help()
-        parser.exit()
-    else:
-        return args
+    return parser.parse_args(argv)
 
-
-def main(argv):
-    args = parse_args(argv)
-    global_profile = Profile(create_dir=True)
-    user_profile_name = args.specified_profile or global_profile.get_config('profile', 'default')
-    if user_profile_name is None:
-        user_profile = None
+def login(args, user_profile, global_profile):
+    if user_profile is None:
         consumer_key = global_profile.get_config('consumer', 'key')
         consumer_secret = global_profile.get_config('consumer', 'secret')
         token_key = None
         token_secret = None
     else:
-        user_profile = Profile(user_profile_name)
-        consumer_key = user_profile.get_config('consumer', 'key')
-        consumer_secret = user_profile.get_config('consumer', 'secret')
-        if args.use_global_profile or consumer_key is None:
-            consumer_key = global_profile.get_config('consumer', 'key')
-        if args.use_global_profile or consumer_secret is None:
-            consumer_secret = global_profile.get_config('consumer', 'secret')
+        consumer_key = user_profile.get_config('consumer', 'key') or \
+            global_profile.get_config('consumer', 'key')
+        consumer_secret = user_profile.get_config('consumer', 'secret') or \
+            global_profile.get_config('consumer', 'secret')
         token_key = user_profile.get_config('token', 'key')
         token_secret = user_profile.get_config('token', 'secret')
-    if args.type == ProfileCommands:
-        if args.function == 'login' and args.profile_name is None:
-            # prepare for login
-            token_key, token_secret = None, None
-            user_profile_name = None
-        else:
-            commands = ProfileCommands(args, user_profile, global_profile)
-            commands.call(args.function)
-            sys.exit(0)
     try:
         # login
         if not (consumer_key and consumer_secret):
@@ -612,7 +588,7 @@ def main(argv):
         consumer_secret=consumer_secret,
         access_token_key=token_key,
         access_token_secret=token_secret)
-    if not user_profile_name:
+    if not user_profile:
         screen_name = api.VerifyCredentials().screen_name
         # choose profile name
         while True:
@@ -626,21 +602,28 @@ def main(argv):
                 print >> sys.stderr, 'The profile "%s" exists' % user_profile_name
             elif user_profile_name:
                 break
-    global_profile.set_config('profile', 'default', user_profile_name.lower())
-    user_profile = Profile(user_profile_name, create_dir=True)
-    if args.use_global_profile:
-        global_profile.set_config('consumer', 'key', consumer_key)
-        global_profile.set_config('consumer', 'secret', consumer_secret)
+        user_profile = Profile(user_profile_name, create_dir=True)
     else:
-        user_profile.set_config('consumer', 'key', consumer_key)
-        user_profile.set_config('consumer', 'secret', consumer_secret)
+        user_profile_name = user_profile.profile_name
+    global_profile.set_config('profile', 'default', user_profile_name.lower())
+    user_profile.set_config('consumer', 'key', consumer_key)
+    user_profile.set_config('consumer', 'secret', consumer_secret)
     user_profile.set_config('token', 'key', token_key)
     user_profile.set_config('token', 'secret', token_secret)
     user_profile.write_config()
     global_profile.write_config()
-    if args.type == ProfileCommands and args.function == 'login' and args.profile_name is None:
-        # if it's login and config is writen, then exit here
+    return api
+
+def main(argv):
+    args = parse_args(argv)
+    global_profile = Profile(create_dir=True)
+    user_profile_name = args.specified_profile or global_profile.get_config('profile', 'default')
+    user_profile = None if user_profile_name is None else Profile(user_profile_name)
+    if args.type == ProfileCommands:
+        commands = ProfileCommands(args, user_profile, global_profile)
+        commands.call(args.function)
         sys.exit(0)
+    api = login(args, user_profile, global_profile)
     if args.type == TwitterCommands:
         commands = TwitterCommands(api, args, user_profile, global_profile)
         commands.call(args.function)
