@@ -4,7 +4,7 @@ __author__ = 'Tao Peng <pt@taopeng.me>'
 __version__ = '0.0.1'
 
 import sys, os
-import shutil
+from shutil import rmtree
 import webbrowser
 import twitter
 import argparse
@@ -209,8 +209,13 @@ class Profile(object):
             self._config_modified = False
 
     def clear(self):
-        shutil.rmtree(self._path)
-
+        if os.path.isdir(self._path):
+            try:
+                rmtree(self._path)
+            except OSError:
+                print >> sys.stderr, 'Unable to delete "%s"' % self._path
+        else:
+            raise Exception('"%s" not found' % self._path)
 
 class ProfileCommands(object):
     def __init__(self, args, user_profile, global_profile):
