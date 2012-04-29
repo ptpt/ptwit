@@ -3,7 +3,8 @@
 __author__ = 'Tao Peng <pt@taopeng.me>'
 __version__ = '0.0.1'
 
-import sys, os
+import sys
+import os
 from shutil import rmtree
 import webbrowser
 import twitter
@@ -15,7 +16,7 @@ PTWIT_CONFIG_DIR = os.path.expanduser('~/.%s' % os.path.basename(__file__))
 PTWIT_FORMAT_TWEET = '[%user.screen_name%] %text%'
 PTWIT_FORMAT_MESSAGE = '[%sender_screen_name%] %text%'
 PTWIT_FORMAT_USER =\
-'''@%screen_name%
+    '''@%screen_name%
 Name:        %name%
 Location:    %location%
 URL:         %url%
@@ -25,10 +26,15 @@ Status:      %statuses_count%
 Description: %description%
 '''
 
+
 def lookup(key, dictionary):
     """
     Lookup `dictionary' with `key' recursively.
-    e.g. lookup('user.name', {'user':{'name':'pt', 'age':24}, 'status':'hello world'}) will return 'pt'.
+    e.g. lookup('user.name',
+                {'user':{'name':'pt',
+                         'age':24},
+                 'status':'hello world'})
+    will return 'pt'.
     """
     if key in dictionary:
         if isinstance(dictionary[key], basestring):
@@ -39,7 +45,8 @@ def lookup(key, dictionary):
         subkeys = key.split('.', 1)
         if len(subkeys) is not 2:
             return None
-        if subkeys[0] in dictionary and isinstance(dictionary[subkeys[0]], dict):
+        if subkeys[0] in dictionary and \
+                isinstance(dictionary[subkeys[0]], dict):
             return lookup(subkeys[1], dictionary[subkeys[0]])
         else:
             return None
@@ -52,8 +59,10 @@ def format_dictionary(format, dictionary, date=None):
     Arguments:
     format: format control string
     dictionary: dictionary where values are taken from
-    date: None or a function, which takes `dictionary' as input and get its date information (if existed).
-    The date information is use to fill up format string, such as %y%, %m%, etc.
+    date: None or a function, which takes `dictionary' as input and
+    get its date information (if existed).
+    The date information is use to fill up format string,
+    such as %y%, %m%, etc.
 
     Returns:
     A formatted string
@@ -96,29 +105,35 @@ def get_oauth(consumer_key, consumer_secret):
     oauth_client = oauth.Client(oauth_consumer)
     resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
     if resp['status'] != '200':
-        print >> sys.stderr, 'Invalid respond from Twitter requesting temp token: %s' % resp['status']
+        print >> sys.stderr, \
+            'Invalid respond from Twitter requesting temp token: %s' % \
+            resp['status']
         sys.exit(2)
     request_token = dict(parse_qsl(content))
-    authorization_url = '%s?oauth_token=%s' % (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
+    authorization_url = '%s?oauth_token=%s' % \
+        (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
     print 'Opening:', authorization_url
     webbrowser.open_new_tab(authorization_url)
     pincode = raw_input('Enter the pincode: ')
-    token = oauth.Token(request_token['oauth_token'], request_token['oauth_token_secret'])
+    token = oauth.Token(request_token['oauth_token'],
+                        request_token['oauth_token_secret'])
     token.set_verifier(pincode)
     oauth_client = oauth.Client(oauth_consumer, token)
     resp, content = oauth_client.request(twitter.ACCESS_TOKEN_URL,
-        method='POST',
-        body='oauth_verifier=%s' % pincode)
+                                         method='POST',
+                                         body='oauth_verifier=%s' % pincode)
     access_token = dict(parse_qsl(content))
     if resp['status'] != '200':
-        print >> sys.stderr, 'The request for a Token did not succeed: %s' % resp['status']
+        print >> sys.stderr, \
+            'The request for a Token did not succeed: %s' % resp['status']
         sys.exit(2)
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
 
 
 def get_consumer():
-    return raw_input('Consumer key: ').strip(), raw_input('Consumer secret: ').strip()
+    return raw_input('Consumer key: ').strip(), \
+        raw_input('Consumer secret: ').strip()
 
 
 def get_dir_create(dir):
@@ -140,7 +155,8 @@ class Profile(object):
     def __init__(self, profile_name=None, create_dir=False):
         self.profile_name = profile_name
         if create_dir:
-            self._path = get_dir_create(os.path.join(Profile.global_path, profile_name or ''))
+            self._path = get_dir_create(os.path.join(Profile.global_path,
+                                                     profile_name or ''))
         else:
             self._path = os.path.join(Profile.global_path, profile_name or '')
         self._config_path = os.path.join(
@@ -152,7 +168,8 @@ class Profile(object):
     @classmethod
     def get_all(cls):
         return [profile for profile in os.listdir(cls.global_path)
-                if os.path.isdir(os.path.join(cls.global_path, profile)) and not profile.startswith('.')]
+                if os.path.isdir(os.path.join(cls.global_path, profile)) and \
+                    not profile.startswith('.')]
 
     @property
     def config(self):
@@ -217,6 +234,7 @@ class Profile(object):
         else:
             raise Exception('"%s" not found' % self._path)
 
+
 class ProfileCommands(object):
     def __init__(self, args, user_profile, global_profile):
         self.args = args
@@ -277,7 +295,8 @@ class ProfileCommands(object):
             self.args.value = self.args.profile_name
             self.call()
         else:
-            raise Exception('profile "%s" doesn\'t exist' % self.args.profile_name)
+            raise Exception('profile "%s" doesn\'t exist' % \
+                                self.args.profile_name)
 
     def call(self, function=None):
         if function is None:
@@ -296,9 +315,9 @@ class TwitterCommands(object):
     def _print_user(self, user):
         user = user.AsDict()
         format = self.args.specified_format or\
-                 self.user_config.get_config('format', 'user') or\
-                 self.global_config.get_config('format', 'user') or\
-                 PTWIT_FORMAT_USER
+            self.user_config.get_config('format', 'user') or\
+            self.global_config.get_config('format', 'user') or\
+            PTWIT_FORMAT_USER
         print format_dictionary(format, user).encode('utf-8')
 
     def _print_users(self, users):
@@ -308,12 +327,13 @@ class TwitterCommands(object):
     def _print_tweet(self, tweet):
         tweet = tweet.AsDict()
         format = self.args.specified_format or\
-                 self.user_config.get_config('format', 'tweet') or\
-                 self.global_config.get_config('format', 'tweet') or\
-                 PTWIT_FORMAT_TWEET
+            self.user_config.get_config('format', 'tweet') or\
+            self.global_config.get_config('format', 'tweet') or\
+            PTWIT_FORMAT_TWEET
         print format_dictionary(
             format, tweet,
-            date=strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+            date=strptime(tweet['created_at'],
+                          '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -322,9 +342,9 @@ class TwitterCommands(object):
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
         format = self.args.specified_format or\
-                 self.user_config.get_config('format', 'tweet') or\
-                 self.global_config.get_config('format', 'tweet') or\
-                 PTWIT_FORMAT_TWEET
+            self.user_config.get_config('format', 'tweet') or\
+            self.global_config.get_config('format', 'tweet') or\
+            PTWIT_FORMAT_TWEET
         print format_dictionary(
             format, tweet,
             date=strptime(tweet['created_at'], '%a, %d %b %Y %H:%M:%S +0000'))
@@ -336,12 +356,13 @@ class TwitterCommands(object):
     def _print_message(self, message):
         message = message.AsDict()
         format = self.args.specified_format or\
-                 self.user_config.get_config('format', 'message') or\
-                 self.global_config.get_config('format', 'tweet') or\
-                 PTWIT_FORMAT_MESSAGE
+            self.user_config.get_config('format', 'message') or\
+            self.global_config.get_config('format', 'tweet') or\
+            PTWIT_FORMAT_MESSAGE
         print format_dictionary(
             format, message,
-            date=strptime(message['created_at'], '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+            date=strptime(message['created_at'],
+                          '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_messages(self, messages):
         for message in messages:
@@ -446,7 +467,8 @@ class TwitterCommands(object):
         print 'you have unfollowed @%s' % user.screen_name
 
     def faves(self):
-        self._print_tweets(self.api.GetFavorites(user=self.args.user, page=self.args.page))
+        self._print_tweets(self.api.GetFavorites(user=self.args.user,
+                                                 page=self.args.page))
 
     def search(self):
         tweets = self.api.GetSearch(term=' '.join(self.args.term))
@@ -461,9 +483,12 @@ class TwitterCommands(object):
 
 
 def parse_args(argv):
-    parser = argparse.ArgumentParser(description='Twitter command-line.', prog=os.path.basename(__file__))
-    parser.add_argument('-p', dest='specified_profile', metavar='profile', action='store', help='specify a profile')
-    parser.add_argument('-f', dest='specified_format', metavar='format', help='print format')
+    parser = argparse.ArgumentParser(description='Twitter command-line.',
+                                     prog=os.path.basename(__file__))
+    parser.add_argument('-p', dest='specified_profile', metavar='profile',
+                        action='store', help='specify a profile')
+    parser.add_argument('-f', dest='specified_format', metavar='format',
+                        help='print format')
     # todo: default command
     # twitter commands
     subparsers = parser.add_subparsers(title='twitter commands')
@@ -540,8 +565,11 @@ def parse_args(argv):
     p.set_defaults(type=TwitterCommands, function='search')
     # profile commands
     profile_parser = subparsers.add_parser('profile', help='manage profiles')
-    profile_parser.add_argument('-g', action='store_true', dest='use_global_profile', help='apply global configuration only')
-    profile_subparsers = profile_parser.add_subparsers(title='profile', help='profile commands')
+    profile_parser.add_argument('-g', action='store_true',
+                                dest='use_global_profile',
+                                help='apply global configuration only')
+    profile_subparsers = profile_parser.add_subparsers(title='profile',
+                                                       help='profile commands')
     # todo default profile command
     # profile set
     p = profile_subparsers.add_parser('set', help='set option')
@@ -558,7 +586,8 @@ def parse_args(argv):
     p = profile_subparsers.add_parser('list', help='list profiles')
     p.set_defaults(type=ProfileCommands, function='list')
     # profile config
-    p = profile_subparsers.add_parser('config', help='show a profile\'s configurations')
+    p = profile_subparsers.add_parser('config',
+                                      help='show a profile\'s configurations')
     p.add_argument('profile', nargs='?')
     p.set_defaults(type=ProfileCommands, function='config')
     # profile clear
@@ -566,6 +595,7 @@ def parse_args(argv):
     p.add_argument('profiles', nargs='+')
     p.set_defaults(type=ProfileCommands, function='clear')
     return parser.parse_args(argv)
+
 
 def login(args, user_profile, global_profile):
     if user_profile is None:
@@ -598,13 +628,15 @@ def login(args, user_profile, global_profile):
         # choose profile name
         while True:
             try:
-                user_profile_name = raw_input('Enter a profile name (%s): ' % screen_name).strip()
+                user_profile_name = raw_input('Enter a profile name (%s): ' % \
+                                                  screen_name).strip()
             except KeyboardInterrupt:
                 sys.exit(0)
             if not user_profile_name:
                 user_profile_name = screen_name
             if user_profile_name in Profile.get_all():
-                print >> sys.stderr, 'The profile "%s" exists' % user_profile_name
+                print >> sys.stderr, \
+                    'The profile "%s" exists' % user_profile_name
             elif user_profile_name:
                 break
         user_profile = Profile(user_profile_name, create_dir=True)
@@ -619,11 +651,14 @@ def login(args, user_profile, global_profile):
     global_profile.write_config()
     return api
 
+
 def main(argv):
     args = parse_args(argv)
     global_profile = Profile(create_dir=True)
-    user_profile_name = args.specified_profile or global_profile.get_config('profile', 'default')
-    user_profile = None if user_profile_name is None else Profile(user_profile_name)
+    user_profile_name = args.specified_profile or \
+        global_profile.get_config('profile', 'default')
+    user_profile = None if user_profile_name is None \
+        else Profile(user_profile_name)
     if args.type == ProfileCommands:
         commands = ProfileCommands(args, user_profile, global_profile)
         commands.call(args.function)
