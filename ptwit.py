@@ -286,7 +286,21 @@ class ProfileCommands(object):
 
     def login(self):
         if self.args.profile_name is None:
-            login(self.args, None, self.global_profile)
+            consumer_key, consumer_secret, token_key, token_secret = \
+                get_consumer_and_token(None, self.global_profile)
+            api = twitter.Api(
+                consumer_key=consumer_key,
+                consumer_secret=consumer_secret,
+                access_token_key=token_key,
+                access_token_secret=token_secret)
+            user_profile = Profile(choose_profile_name(api.VerifyCredentials().screen_name), create_dir=True)
+            user_profile.set_config('consumer', 'key', consumer_key)
+            user_profile.set_config('consumer', 'secret', consumer_secret)
+            user_profile.set_config('token', 'key', token_key)
+            user_profile.set_config('token', 'secret', token_secret)
+            user_profile.write_config()
+            self.global_profile.set_config('profile', 'default', user_profile.profile_name.lower())
+            self.global_profile.write_config()
         elif self.args.profile_name in Profile.get_all():
             self.args.use_global_profile = True
             self.args.call = 'set'
@@ -597,7 +611,7 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
-def login(args, user_profile, global_profile):
+def get_consumer_and_token(user_profile, global_profile):
     if user_profile is None:
         consumer_key = global_profile.get_config('consumer', 'key')
         consumer_secret = global_profile.get_config('consumer', 'secret')
@@ -618,38 +632,24 @@ def login(args, user_profile, global_profile):
             token_key, token_secret = get_oauth(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
         sys.exit(0)
-    api = twitter.Api(
-        consumer_key=consumer_key,
-        consumer_secret=consumer_secret,
-        access_token_key=token_key,
-        access_token_secret=token_secret)
-    if not user_profile:
-        screen_name = api.VerifyCredentials().screen_name
-        # choose profile name
-        while True:
-            try:
-                user_profile_name = raw_input('Enter a profile name (%s): ' % \
-                                                  screen_name).strip()
-            except KeyboardInterrupt:
-                sys.exit(0)
-            if not user_profile_name:
-                user_profile_name = screen_name
-            if user_profile_name in Profile.get_all():
-                print >> sys.stderr, \
-                    'The profile "%s" exists' % user_profile_name
-            elif user_profile_name:
-                break
-        user_profile = Profile(user_profile_name, create_dir=True)
-    else:
-        user_profile_name = user_profile.profile_name
-    global_profile.set_config('profile', 'default', user_profile_name.lower())
-    user_profile.set_config('consumer', 'key', consumer_key)
-    user_profile.set_config('consumer', 'secret', consumer_secret)
-    user_profile.set_config('token', 'key', token_key)
-    user_profile.set_config('token', 'secret', token_secret)
-    user_profile.write_config()
-    global_profile.write_config()
-    return api
+    return consumer_key, consumer_secret, token_key, token_secret
+
+
+def choose_profile_name(default_name):
+    while True:
+        try:
+            profile_name = raw_input('Enter a profile name (%s): ' % \
+                                         default_name).strip()
+        except KeyboardInterrupt:
+            sys.exit(0)
+        if not profile_name:
+            profile_name = default_name
+        if profile_name in Profile.get_all():
+            print >> sys.stderr, \
+                'The profile "%s" exists' % profile_name
+        elif profile_name:
+            break
+    return profile_name
 
 
 def main(argv):
@@ -663,7 +663,22 @@ def main(argv):
         commands = ProfileCommands(args, user_profile, global_profile)
         commands.call(args.function)
         sys.exit(0)
-    api = login(args, user_profile, global_profile)
+    consumer_key, consumer_secret, token_key, token_secret = \
+        get_consumer_and_token(user_profile, global_profile)
+    api = twitter.Api(
+        consumer_key=consumer_key,
+        consumer_secret=consumer_secret,
+        access_token_key=token_key,
+        access_token_secret=token_secret)
+    if not user_profile:
+        user_profile = Profile(choose_profile_name(api.VerifyCredentials().screen_name), create_dir=True)
+    global_profile.set_config('profile', 'default', user_profile.profile_name.lower())
+    user_profile.set_config('consumer', 'key', consumer_key)
+    user_profile.set_config('consumer', 'secret', consumer_secret)
+    user_profile.set_config('token', 'key', token_key)
+    user_profile.set_config('token', 'secret', token_secret)
+    user_profile.write_config()
+    global_profile.write_config()
     if args.type == TwitterCommands:
         commands = TwitterCommands(api, args, user_profile, global_profile)
         commands.call(args.function)
