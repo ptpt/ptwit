@@ -12,7 +12,7 @@ import argparse
 import ConfigParser
 from time import strftime, strptime
 
-PTWIT_CONFIG_DIR = os.path.expanduser('~/.%s' % os.path.basename(__file__))
+PTWIT_PROFILE_DIR = os.path.expanduser('~/.%s' % os.path.basename(__file__))
 PTWIT_FORMAT_TWEET = '[%user.screen_name%] %text%'
 PTWIT_FORMAT_MESSAGE = '[%sender_screen_name%] %text%'
 PTWIT_FORMAT_USER =\
@@ -150,7 +150,7 @@ def get_dir_create(dir):
 
 
 class Profile(object):
-    global_path = PTWIT_CONFIG_DIR
+    global_path = PTWIT_PROFILE_DIR
 
     def __init__(self, profile_name=None, create_dir=False):
         self.profile_name = profile_name
