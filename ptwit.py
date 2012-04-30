@@ -194,22 +194,22 @@ class Profile(object):
             pass
         return self._config
 
-    def set_config(self, section, option, value):
+    def set(self, section, option, value):
         config = self.config
-        if value != self.get_config(section, option):
+        if value != self.get(section, option):
             if not config.has_section(section):
                 config.add_section(section)
             config.set(section, option, value)
             self._config_modified = True
 
-    def get_config(self, section, option):
+    def get(self, section, option):
         config = self.config
         try:
             return config.get(section, option)
         except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
             return None
 
-    def remove_config(self, section, option=None):
+    def remove(self, section, option=None):
         config = self.config
         if option is None:
             config.remove_section(section)
@@ -219,7 +219,7 @@ class Profile(object):
                 config.remove_section(section)
         self._config_modified = True
 
-    def write_config(self):
+    def save(self):
         if self._config_modified:
             with open(self._config_path, 'wb') as f:
                 self.config.write(f)
@@ -246,21 +246,21 @@ class ProfileCommands(object):
         option = self.args.option
         value = self.args.value
         if self.args.use_global_profile:
-            self.global_profile.set_config(section, option, value)
-            self.global_profile.write_config()
+            self.global_profile.set(section, option, value)
+            self.global_profile.save()
         else:
-            self.user_profile.set_config(section, option, value)
-            self.user_profile.write_config()
+            self.user_profile.set(section, option, value)
+            self.user_profile.save()
 
     def remove(self):
         section = self.args.section
         option = self.args.option
         if self.args.use_global_profile:
-            self.global_profile.remove_config(section, option)
-            self.global_profile.write_config()
+            self.global_profile.remove(section, option)
+            self.global_profile.save()
         else:
-            self.user_profile.remove_config(section, option)
-            self.user_profile.write_config()
+            self.user_profile.remove(section, option)
+            self.user_profile.save()
 
     def list(self):
         for profile in Profile.get_all():
@@ -293,14 +293,16 @@ class ProfileCommands(object):
                 consumer_secret=consumer_secret,
                 access_token_key=token_key,
                 access_token_secret=token_secret)
-            user_profile = Profile(choose_profile_name(api.VerifyCredentials().screen_name), create_dir=True)
-            user_profile.set_config('consumer', 'key', consumer_key)
-            user_profile.set_config('consumer', 'secret', consumer_secret)
-            user_profile.set_config('token', 'key', token_key)
-            user_profile.set_config('token', 'secret', token_secret)
-            user_profile.write_config()
-            self.global_profile.set_config('profile', 'default', user_profile.profile_name.lower())
-            self.global_profile.write_config()
+            user_profile = Profile(choose_profile_name(api.VerifyCredentials().screen_name),
+                                   create_dir=True)
+            user_profile.set('consumer', 'key', consumer_key)
+            user_profile.set('consumer', 'secret', consumer_secret)
+            user_profile.set('token', 'key', token_key)
+            user_profile.set('token', 'secret', token_secret)
+            user_profile.save()
+            self.global_profile.set('profile', 'default',
+                                           user_profile.profile_name.lower())
+            self.global_profile.save()
         elif self.args.profile_name in Profile.get_all():
             self.args.use_global_profile = True
             self.args.call = 'set'
@@ -328,9 +330,9 @@ class TwitterCommands(object):
 
     def _print_user(self, user):
         user = user.AsDict()
-        format = self.args.specified_format or\
-            self.user_config.get_config('format', 'user') or\
-            self.global_config.get_config('format', 'user') or\
+        format = self.args.specified_format or \
+            self.user_config.get('format', 'user') or \
+            self.global_config.get('format', 'user') or \
             PTWIT_FORMAT_USER
         print format_dictionary(format, user).encode('utf-8')
 
@@ -340,9 +342,9 @@ class TwitterCommands(object):
 
     def _print_tweet(self, tweet):
         tweet = tweet.AsDict()
-        format = self.args.specified_format or\
-            self.user_config.get_config('format', 'tweet') or\
-            self.global_config.get_config('format', 'tweet') or\
+        format = self.args.specified_format or \
+            self.user_config.get('format', 'tweet') or \
+            self.global_config.get('format', 'tweet') or \
             PTWIT_FORMAT_TWEET
         print format_dictionary(
             format, tweet,
@@ -355,9 +357,9 @@ class TwitterCommands(object):
 
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
-        format = self.args.specified_format or\
-            self.user_config.get_config('format', 'tweet') or\
-            self.global_config.get_config('format', 'tweet') or\
+        format = self.args.specified_format or \
+            self.user_config.get('format', 'tweet') or \
+            self.global_config.get('format', 'tweet') or \
             PTWIT_FORMAT_TWEET
         print format_dictionary(
             format, tweet,
@@ -369,9 +371,9 @@ class TwitterCommands(object):
 
     def _print_message(self, message):
         message = message.AsDict()
-        format = self.args.specified_format or\
-            self.user_config.get_config('format', 'message') or\
-            self.global_config.get_config('format', 'tweet') or\
+        format = self.args.specified_format or \
+            self.user_config.get('format', 'message') or \
+            self.global_config.get('format', 'tweet') or \
             PTWIT_FORMAT_MESSAGE
         print format_dictionary(
             format, message,
@@ -406,20 +408,20 @@ class TwitterCommands(object):
         if self.args.count is None and self.args.page is None:
             tweets = self.api.GetFriendsTimeline(
                 page=self.args.page,
-                since_id=self.user_config.get_config('since', 'timeline'))
+                since_id=self.user_config.get('since', 'timeline'))
         else:
             tweets = self.api.GetFriendsTimeline(
                 page=self.args.page,
                 count=self.args.count)
         self._print_tweets(tweets)
         if len(tweets):
-            self.user_config.set_config('since', 'timeline', tweets[0].id)
-            self.user_config.write_config()
+            self.user_config.set('since', 'timeline', tweets[0].id)
+            self.user_config.save()
 
     def mentions(self):
         if self.args.count is None and self.args.page is None:
             tweets = self.api.GetMentions(
-                since_id=self.user_config.get_config('since', 'mentions'),
+                since_id=self.user_config.get('since', 'mentions'),
                 page=self.args.page)
         else:
             tweets = self.api.GetMentions(
@@ -428,13 +430,13 @@ class TwitterCommands(object):
                 page=self.args.page)
         self._print_tweets(tweets)
         if len(tweets):
-            self.user_config.set_config('since', 'mentions', tweets[0].id)
-            self.user_config.write_config()
+            self.user_config.set('since', 'mentions', tweets[0].id)
+            self.user_config.save()
 
     def replies(self):
         if self.args.count is None and self.args.page is None:
             tweets = self.api.GetReplies(
-                since_id=self.user_config.get_config('since', 'replies'),
+                since_id=self.user_config.get('since', 'replies'),
                 page=self.args.page)
         else:
             tweets = self.api.GetReplies(
@@ -442,21 +444,21 @@ class TwitterCommands(object):
                 page=self.args.page)
         self._print_tweets(tweets)
         if len(tweets):
-            self.user_config.set_config('since', 'replies', tweets[0].id)
-            self.user_config.write_config()
+            self.user_config.set('since', 'replies', tweets[0].id)
+            self.user_config.save()
 
     def messages(self):
         if self.args.count is None and self.args.page is None:
             messages = self.api.GetDirectMessages(
-                since_id=self.user_config.get_config('since', 'messages'),
+                since_id=self.user_config.get('since', 'messages'),
                 page=self.args.page)
         else:
             messages = self.api.GetDirectMessages(
                 page=self.args.page)
         self._print_messages(messages)
         if len(messages):
-            self.user_config.set_config('since', 'messages', messages[0].id)
-            self.user_config.write_config()
+            self.user_config.set('since', 'messages', messages[0].id)
+            self.user_config.save()
 
     def send(self):
         user = self.args.user
@@ -613,17 +615,17 @@ def parse_args(argv):
 
 def get_consumer_and_token(user_profile, global_profile):
     if user_profile is None:
-        consumer_key = global_profile.get_config('consumer', 'key')
-        consumer_secret = global_profile.get_config('consumer', 'secret')
+        consumer_key = global_profile.get('consumer', 'key')
+        consumer_secret = global_profile.get('consumer', 'secret')
         token_key = None
         token_secret = None
     else:
-        consumer_key = user_profile.get_config('consumer', 'key') or \
-            global_profile.get_config('consumer', 'key')
-        consumer_secret = user_profile.get_config('consumer', 'secret') or \
-            global_profile.get_config('consumer', 'secret')
-        token_key = user_profile.get_config('token', 'key')
-        token_secret = user_profile.get_config('token', 'secret')
+        consumer_key = user_profile.get('consumer', 'key') or \
+            global_profile.get('consumer', 'key')
+        consumer_secret = user_profile.get('consumer', 'secret') or \
+            global_profile.get('consumer', 'secret')
+        token_key = user_profile.get('token', 'key')
+        token_secret = user_profile.get('token', 'secret')
     try:
         # login
         if not (consumer_key and consumer_secret):
@@ -656,7 +658,7 @@ def main(argv):
     args = parse_args(argv)
     global_profile = Profile(create_dir=True)
     user_profile_name = args.specified_profile or \
-        global_profile.get_config('profile', 'default')
+        global_profile.get('profile', 'default')
     user_profile = None if user_profile_name is None \
         else Profile(user_profile_name)
     if args.type == ProfileCommands:
@@ -671,14 +673,16 @@ def main(argv):
         access_token_key=token_key,
         access_token_secret=token_secret)
     if not user_profile:
-        user_profile = Profile(choose_profile_name(api.VerifyCredentials().screen_name), create_dir=True)
-    global_profile.set_config('profile', 'default', user_profile.profile_name.lower())
-    user_profile.set_config('consumer', 'key', consumer_key)
-    user_profile.set_config('consumer', 'secret', consumer_secret)
-    user_profile.set_config('token', 'key', token_key)
-    user_profile.set_config('token', 'secret', token_secret)
-    user_profile.write_config()
-    global_profile.write_config()
+        user_profile = Profile(choose_profile_name(api.VerifyCredentials().screen_name),
+                               create_dir=True)
+    global_profile.set('profile', 'default',
+                              user_profile.profile_name.lower())
+    user_profile.set('consumer', 'key', consumer_key)
+    user_profile.set('consumer', 'secret', consumer_secret)
+    user_profile.set('token', 'key', token_key)
+    user_profile.set('token', 'secret', token_secret)
+    user_profile.save()
+    global_profile.save()
     if args.type == TwitterCommands:
         commands = TwitterCommands(api, args, user_profile, global_profile)
         commands.call(args.function)
