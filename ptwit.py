@@ -190,7 +190,7 @@ class Profile(object):
 
     def unset(self, section, option=None, g=False):
         if g:
-            self.g.remove(section, option)
+            self.g.unset(section, option)
         if option is None:
             self.config.remove_section(section)
         else:
