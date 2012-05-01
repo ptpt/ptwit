@@ -157,11 +157,9 @@ class Profile(object):
             get_dir_create(os.path.join(Profile.profile_root, name or '')),
             'user.conf' if self.name else 'global.conf')
         self.config = ConfigParser.RawConfigParser()
-        try:
-            with open(self.config_path) as f:
-                self.config.readfp(f)
-        except Exception:
-            pass
+        fp = open(self.config_path, 'r' if os.path.isfile(self.config_path) else 'w+')
+        self.config.readfp(fp)
+        fp.close()
         self.modified = False
 
     @classmethod
