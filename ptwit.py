@@ -13,7 +13,9 @@ from time import strftime, strptime
 
 class PTWIT(object):
     PROFILE_DIR = os.path.expanduser('~/.%s' % os.path.basename(__file__))
-    FORMAT_TWEET = '[%user.screen_name%] %text%\n'
+    FORMAT_TWEET = '''\t\033[7m %user.name% \033[0m  (@%user.screen_name%)
+\t%text%
+'''
     FORMAT_MESSAGE = '[%sender_screen_name%] %text%\n'
     FORMAT_USER =\
     '''@%screen_name%
