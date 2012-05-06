@@ -623,6 +623,12 @@ def get_consumer_and_token(profile=None):
             token_key, token_secret = get_oauth(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
         sys.exit(0)
+    if profile.is_global:
+        if not profile.get('consumer', 'key'):
+            profile.set('consumer', 'key', consumer_key)
+        if not profile.get('consumer', 'secret'):
+            profile.set('consumer', 'secret', consumer_secret)
+        profile.save()
     return consumer_key, consumer_secret, token_key, token_secret
 
 
