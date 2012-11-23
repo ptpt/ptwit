@@ -11,7 +11,7 @@ import ConfigParser
 from time import strftime, strptime
 
 
-class PTWIT(object):
+class _PTWIT_CONFIG(object):
     PROFILE_DIR = os.path.expanduser('~/.%s' % os.path.basename(__file__))
     FORMAT_TWEET = '''\t\033[7m %user.name% \033[0m  (@%user.screen_name%)
 \t%text%
@@ -150,7 +150,7 @@ class ProfileError(Exception):
 
 
 class Profile(object):
-    profile_root = PTWIT.PROFILE_DIR
+    profile_root = _PTWIT_CONFIG.PROFILE_DIR
 
     def __init__(self, name=None):
         self.name = name
@@ -336,7 +336,7 @@ class TwitterCommands(object):
         user = user.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'user') or \
-            PTWIT.FORMAT_USER
+            _PTWIT_CONFIG.FORMAT_USER
         print format_dictionary(format, user).encode('utf-8')
 
     def _print_users(self, users):
@@ -347,7 +347,7 @@ class TwitterCommands(object):
         tweet = tweet.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'tweet') or \
-            PTWIT.FORMAT_TWEET
+            _PTWIT_CONFIG.FORMAT_TWEET
         print format_dictionary(
             format, tweet,
             date=strptime(tweet['created_at'],
@@ -361,7 +361,7 @@ class TwitterCommands(object):
         tweet = tweet.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'tweet') or \
-            PTWIT.FORMAT_TWEET
+            _PTWIT_CONFIG.FORMAT_TWEET
         print format_dictionary(
             format, tweet,
             date=strptime(tweet['created_at'], '%a, %d %b %Y %H:%M:%S +0000'))
@@ -374,7 +374,7 @@ class TwitterCommands(object):
         message = message.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'message') or \
-            PTWIT.FORMAT_MESSAGE
+            _PTWIT_CONFIG.FORMAT_MESSAGE
         print format_dictionary(
             format, message,
             date=strptime(message['created_at'],
