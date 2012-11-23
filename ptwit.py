@@ -682,13 +682,13 @@ def main(argv):
         commands = TwitterCommands(api, args, profile)
         commands.call(args.function)
     else:
-        raise Exception('Invalid command')
+        raise PtwitError('Invalid command')
 
 if __name__ == '__main__':
     #todo: handle encoded text
     try:
         main(sys.argv[1:])
-    except Exception as e:
-        print >> sys.stderr, 'Error: %s' % e.message
+    except (PtwitError, ProfileError, ProfileCommandsError) as err:
+        print >> sys.stderr, 'Error: %s' % err.message
         sys.exit(1)
     sys.exit(0)
