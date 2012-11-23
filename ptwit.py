@@ -612,10 +612,10 @@ def parse_args(argv):
 def get_consumer_and_token(profile=None):
     if profile is None:
         profile = Profile()
-    consumer_key = profile.get('consumer', 'key', True)
-    consumer_secret = profile.get('consumer', 'secret', True)
-    token_key = profile.get('token', 'key', True)
-    token_secret = profile.get('token', 'secret', True)
+    consumer_key = profile.get('consumer', 'key')
+    consumer_secret = profile.get('consumer', 'secret')
+    token_key = profile.get('token', 'key')
+    token_secret = profile.get('token', 'secret')
     try:
         # login
         if not (consumer_key and consumer_secret):
