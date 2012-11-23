@@ -2,7 +2,41 @@ import unittest
 import os
 import sys
 from shutil import rmtree
-from ptwit import Profile
+from time import strftime
+from datetime import datetime
+from ptwit import Profile, lookup, format_dictionary
+
+
+class TestFormat(unittest.TestCase):
+    def testLookup(self):
+        profile = {
+            'user': {'name': 'pt',
+                     'age': 24},
+            'status': 'hello world',
+            'web.site': 'google.com'}
+        self.assertEqual(lookup('user.name', profile), 'pt')
+        self.assertEqual(lookup('user.age', profile), 24)
+        self.assertEqual(lookup('status', profile), 'hello world')
+        self.assertIsNone(lookup('test', profile))
+        self.assertIsNone(lookup('user.test', profile))
+        self.assertEqual(lookup('user', profile), {'name': 'pt', 'age': 24})
+        self.assertIsNone(lookup('.name', profile))
+        self.assertIsNone(lookup('status.name', profile))
+        self.assertEqual(lookup('web.site', profile), 'google.com')
+
+    def testFormatDictionary(self):
+        profile = {'user': {'name': 'pt',
+                            'age': 12},
+                   'status': 'good',
+                   'web.site': 'taopeng.me',
+                   'y': 'not year'}
+        self.assertEqual(format_dictionary('%user%', profile), "{'age': 12, 'name': 'pt'}")
+        self.assertEqual(format_dictionary('%user.name% is good', profile), 'pt is good')
+        self.assertEqual(format_dictionary('%y%', profile), 'not year')
+        self.assertEqual(format_dictionary('%%', profile), '%')
+        now = datetime.utcnow()
+        self.assertEqual(format_dictionary('%y%', profile, now), now.strftime('%y'))
+
 
 class TestProfile(unittest.TestCase):
     def setUp(self):
