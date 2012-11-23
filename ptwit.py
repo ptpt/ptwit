@@ -8,7 +8,7 @@ import os
 import twitter
 import argparse
 import ConfigParser
-from time import strftime, strptime
+from datetime import datetime
 
 
 class _PTWIT_CONFIG(object):
@@ -58,16 +58,16 @@ def lookup(key, dictionary):
             return None
 
 
-def format_dictionary(format, dictionary, date=None):
+def format_dictionary(format, dictionary, time=None):
     """
     Format a string out of format-string and dictionary.
 
     Arguments:
     format: format control string
     dictionary: dictionary where values are taken from
-    date: None or a function, which takes `dictionary' as input and
-    get its date information (if existed).
-    The date information is use to fill up format string,
+    time: None or a function, which takes `dictionary' as input and
+    get its time information (if existed).
+    The time information is use to fill up format string,
     such as %y%, %m%, etc.
 
     Returns:
@@ -84,8 +84,8 @@ def format_dictionary(format, dictionary, date=None):
                 if tag == '':
                     text += '%'
                 else:
-                    if date and tag in list('aAbBcdHIJmMpSUwWxXyYZ'):
-                        value = strftime('%' + tag, date)
+                    if time and tag in list('aAbBcdHIJmMpSUwWxXyYZ'):
+                        value = time.strftime('%' + tag)
                     else:
                         value = unicode(lookup(tag, dictionary))
                     text += '%' + tag + '%' if value is None else value
@@ -354,8 +354,8 @@ class TwitterCommands(object):
             _PTWIT_CONFIG.FORMAT_TWEET
         print format_dictionary(
             format, tweet,
-            date=strptime(tweet['created_at'],
-                          '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+            time=datetime.strptime(tweet['created_at'],
+                                   '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -368,7 +368,7 @@ class TwitterCommands(object):
             _PTWIT_CONFIG.FORMAT_TWEET
         print format_dictionary(
             format, tweet,
-            date=strptime(tweet['created_at'], '%a, %d %b %Y %H:%M:%S +0000'))
+            time=datetime.strptime(tweet['created_at'], '%a, %d %b %Y %H:%M:%S +0000'))
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -381,8 +381,8 @@ class TwitterCommands(object):
             _PTWIT_CONFIG.FORMAT_MESSAGE
         print format_dictionary(
             format, message,
-            date=strptime(message['created_at'],
-                          '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+            time=datetime.strptime(message['created_at'],
+                                   '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_messages(self, messages):
         for message in messages:
@@ -640,8 +640,8 @@ def get_consumer_and_token(profile=None):
 def choose_profile_name(default):
     while True:
         try:
-            name = raw_input('Enter a profile name (%s): ' % \
-                                         default).strip()
+            name = raw_input(
+                'Enter a profile name (%s): ' % default).strip()
         except KeyboardInterrupt:
             sys.exit(0)
         if not name:
