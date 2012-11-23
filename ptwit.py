@@ -29,6 +29,10 @@ Description: %description%
 '''
 
 
+class PtwitError(Exception):
+    pass
+
+
 def lookup(key, dictionary):
     """
     Lookup `dictionary' with `key' recursively.
@@ -104,7 +108,7 @@ def get_oauth(consumer_key, consumer_secret):
     oauth_client = oauth.Client(oauth_consumer)
     resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
     if resp['status'] != '200':
-        raise Exception(
+        raise PtwitError(
             'Invalid respond from Twitter requesting temp token: %s' % \
                 resp['status'])
     request_token = dict(parse_qsl(content))
@@ -122,7 +126,7 @@ def get_oauth(consumer_key, consumer_secret):
                                          body='oauth_verifier=%s' % pincode)
     access_token = dict(parse_qsl(content))
     if resp['status'] != '200':
-        raise Exception('The request for a Token did not succeed: %s' \
+        raise PtwitError('The request for a Token did not succeed: %s' \
                             % resp['status'])
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
@@ -141,7 +145,7 @@ def get_dir_create(dir):
         try:
             os.mkdir(dir)
         except OSError:
-            raise Exception('Unable to create %s.' % dir)
+            raise PtwitError('Unable to create %s.' % dir)
     return dir
 
 
@@ -643,7 +647,7 @@ def choose_profile_name(default):
         if not name:
             name = default
         if name in Profile.get_all():
-            raise Exception('Profile "%s" exists.' % name)
+            raise PtwitError('Profile "%s" exists.' % name)
         elif name:
             break
     return name
