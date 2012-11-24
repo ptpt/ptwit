@@ -17,8 +17,7 @@ class _PTWIT_CONFIG(object):
 \t%text%
 '''
     FORMAT_MESSAGE = '[%sender_screen_name%] %text%\n'
-    FORMAT_USER =\
-    '''@%screen_name%
+    FORMAT_USER = '''@%screen_name%
 Name:        %name%
 Location:    %location%
 URL:         %url%
@@ -109,8 +108,8 @@ def get_oauth(consumer_key, consumer_secret):
     resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
     if resp['status'] != '200':
         raise PtwitError(
-            'Invalid respond from Twitter requesting temp token: %s' % \
-                resp['status'])
+            'Invalid respond from Twitter requesting temp token: %s' %
+            resp['status'])
     request_token = dict(parse_qsl(content))
     authorization_url = '%s?oauth_token=%s' % \
         (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
@@ -126,8 +125,8 @@ def get_oauth(consumer_key, consumer_secret):
                                          body='oauth_verifier=%s' % pincode)
     access_token = dict(parse_qsl(content))
     if resp['status'] != '200':
-        raise PtwitError('The request for a Token did not succeed: %s' \
-                            % resp['status'])
+        raise PtwitError('The request for a Token did not succeed: %s' %
+                         resp['status'])
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
 
@@ -163,7 +162,8 @@ class Profile(object):
             get_dir_create(os.path.join(Profile.profile_root, name or '')),
             'user.conf' if self.name else 'global.conf')
         self.config = ConfigParser.RawConfigParser()
-        fp = open(self.config_path, 'r' if os.path.isfile(self.config_path) else 'w+')
+        fp = open(self.config_path,
+                  'r' if os.path.isfile(self.config_path) else 'w+')
         self.config.readfp(fp)
         fp.close()
         self.modified = False
@@ -171,8 +171,8 @@ class Profile(object):
     @classmethod
     def get_all(cls):
         return [profile for profile in os.listdir(cls.profile_root)
-                if os.path.isdir(os.path.join(cls.profile_root, profile)) and \
-                    not profile.startswith('.')]
+                if os.path.isdir(os.path.join(cls.profile_root, profile))
+                and not profile.startswith('.')]
 
     @property
     def is_global(self):
@@ -320,8 +320,8 @@ class ProfileCommands(object):
             self.args.value = self.args.profile_name
             self.call()
         else:
-            raise ProfileCommandsError('profile "%s" doesn\'t exist' % \
-                                self.args.profile_name)
+            raise ProfileCommandsError('profile "%s" doesn\'t exist' %
+                                       self.args.profile_name)
 
     def call(self, function=None):
         if function is None:
@@ -354,8 +354,9 @@ class TwitterCommands(object):
             _PTWIT_CONFIG.FORMAT_TWEET
         print format_dictionary(
             format, tweet,
-            time=datetime.strptime(tweet['created_at'],
-                                   '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+            time=datetime.strptime(
+                tweet['created_at'],
+                '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -368,7 +369,8 @@ class TwitterCommands(object):
             _PTWIT_CONFIG.FORMAT_TWEET
         print format_dictionary(
             format, tweet,
-            time=datetime.strptime(tweet['created_at'], '%a, %d %b %Y %H:%M:%S +0000'))
+            time=datetime.strptime(tweet['created_at'],
+                                   '%a, %d %b %Y %H:%M:%S +0000'))
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -381,8 +383,9 @@ class TwitterCommands(object):
             _PTWIT_CONFIG.FORMAT_MESSAGE
         print format_dictionary(
             format, message,
-            time=datetime.strptime(message['created_at'],
-                                   '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+            time=datetime.strptime(
+                message['created_at'],
+                '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
 
     def _print_messages(self, messages):
         for message in messages:
@@ -429,7 +432,7 @@ class TwitterCommands(object):
                 page=self.args.page)
         else:
             tweets = self.api.GetMentions(
-                # todo: twitter.GetMentions doesn't support count parameter right now
+                # todo: twitter.GetMentions doesn't support count parameter
                 # count=self.args.count,
                 page=self.args.page)
         self._print_tweets(tweets)
@@ -683,6 +686,7 @@ def main(argv):
         commands.call(args.function)
     else:
         raise PtwitError('Invalid command')
+
 
 def cmd():
     #todo: handle encoded text
