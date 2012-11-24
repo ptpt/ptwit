@@ -684,7 +684,7 @@ def main(argv):
     else:
         raise PtwitError('Invalid command')
 
-if __name__ == '__main__':
+def cmd():
     #todo: handle encoded text
     try:
         main(sys.argv[1:])
@@ -692,3 +692,7 @@ if __name__ == '__main__':
         print >> sys.stderr, 'Error: %s' % err.message
         sys.exit(1)
     sys.exit(0)
+
+
+if __name__ == '__main__':
+    cmd()
