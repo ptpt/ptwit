@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 class _PTWIT_CONFIG(object):
-    PROFILE_DIR = os.path.expanduser('~/.%s' % os.path.basename(__file__))
+    PROFILE_DIR = os.path.expanduser('~/.ptwit')
     FORMAT_TWEET = '''\t\033[7m %user.name% \033[0m  (@%user.screen_name%)
 \t%text%
 '''
