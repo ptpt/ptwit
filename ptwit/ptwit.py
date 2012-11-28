@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-__author__ = 'Tao Peng <pt@taopeng.me>'
-__version__ = '0.0.2'
-
 import sys
 import os
 import twitter
