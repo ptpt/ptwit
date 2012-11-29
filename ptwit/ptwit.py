@@ -504,7 +504,7 @@ class TwitterCommands(object):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='Twitter command-line.',
-                                     prog=os.path.basename(__file__))
+                                     prog='ptwit')
     parser.add_argument('-p', dest='specified_profile', metavar='profile',
                         action='store', help='specify a profile')
     parser.add_argument('-f', dest='specified_format', metavar='format',
