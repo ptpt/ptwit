@@ -1,51 +1,66 @@
-* Requirements
-  1. A twitter acount
-  2. A twitter application registered at [[https://dev.twitter.com/apps]]
-* Installation
-  Install =oauth2= and =python-twitter=.
-  #+BEGIN_SRC example
-  pip install oauth2
-  pip install python-twitter
-  #+END_SRC example
+ptwit: a simple command line twitter client.
+============================================
 
-  Download =ptwit=.
-  #+BEGIN_SRC example
-  git clone git://github.com/ptpt/ptwit.git
-  #+END_SRC example
+ptwit is a simple command-line-based twitter client.
 
-  Have fun :)
+Requirements
+------------
+* A twitter account.
+* A twitter application registered at https://dev.twitter.com/apps
 
-* Usage:
-** Twitter commands
-   Login:
-   #+BEGIN_SRC example
+Installation
+------------
+To install ptwit, simply::
+
+    pip install ptwit
+
+The first time you issue a ptwit command will prompt to input a consumer key and a consumer secret,
+both of which can be obtained from your registered application at https://dev.twitter.com/apps
+
+Usage
+-----
+
+Login::
+
    ptwit login
-   #+END_SRC
 
-   Get friends timeline:
-   #+BEGIN_SRC example
+This command will open a twitter authentication page asking for your permission,
+and then presenting a 7-digit pincode if you permit it. Feed ptwit the pincode to finish the login process.
+
+Get friends timeline::
+
    ptwit timeline
-   #+END_SRC
 
-   Post status:
-   #+BEGIN_SRC example
-   ptwit post hello world
-   ptwit post < tweet.txt
-   #+END_SRC
+Get someone's tweets::
 
-   Get public timeline:
-   #+BEGIN_SRC example
-   ptwit public
-   #+END_SRC
+   ptwit tweets someone
+   
+Get mentions or replies::
 
-   Get mentions or replies:
-   #+BEGIN_SRC example
    ptwit mentions
    ptwit replies
-   #+END_SRC
 
-   Send message:
-   #+BEGIN_SRC example
+Commands above always list the latest 20 new tweets, which means the tweets you've fetched will not be listed again.
+
+If you want to list a specified number of tweets, use switch `-c`::
+
+   ptwit timeline -c 30
+
+Or specified page (20 tweets per page)::
+
+   ptwit tweets -p 2 someone
+
+Post a new tweet::
+
+   ptwit post hello world
+   ptwit post < tweet.txt
+
+Get public timeline::
+
+   ptwit public
+
+
+Send message to someone::
+
    ptwit send someone hello, ptwit is awesome
    cat message.txt | ptwit send someone
-   #+END_SRC
