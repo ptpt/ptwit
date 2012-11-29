@@ -13,6 +13,9 @@ class _PTWIT_CONFIG(object):
     FORMAT_TWEET = '''\t\033[7m %user.name% \033[0m  (@%user.screen_name%)
 \t%text%
 '''
+    FORMAT_SEARCH = '''\t\033[7m %user.screen_name% \033[0m
+\t%text%
+'''
     FORMAT_MESSAGE = '[%sender_screen_name%] %text%\n'
     FORMAT_USER = '''@%screen_name%
 Name:        %name%
@@ -362,8 +365,8 @@ class TwitterCommands(object):
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
         format = self.args.specified_format or \
-            self.profile.get('format', 'tweet') or \
-            _PTWIT_CONFIG.FORMAT_TWEET
+            self.profile.get('format', 'search') or \
+            _PTWIT_CONFIG.FORMAT_SEARCH
         print format_dictionary(
             format, tweet,
             time=datetime.strptime(tweet['created_at'],
