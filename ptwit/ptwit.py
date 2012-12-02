@@ -687,7 +687,8 @@ def main(argv):
         user_profile_name = choose_profile_name(
             api.VerifyCredentials().screen_name)
         user_profile = Profile(user_profile_name)
-    global_profile.set('profile', 'default', user_profile_name)
+    if not global_profile.get('profile', 'default'):
+        global_profile.set('profile', 'default', user_profile_name)
     # set consumer pairs both in the user profile and global profile
     if not global_profile.get('consumer', 'key'):
         global_profile.set('consumer', 'key', ck)
