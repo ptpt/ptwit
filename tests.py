@@ -126,6 +126,49 @@ world = 13
             rmtree(Profile.profile_root)
 
 
+class TestInput(unittest.TestCase):
+    def setUp(self):
+        Profile.profile_root = 'tmp_ptwit_profile'
+
+    def testChooseName(self):
+        vals = iter(['hello', 'world', '', 'ptpt'])
+        def raw_input(prompt=''):
+            return vals.next()
+        ptwit.raw_input = raw_input
+        self.assertEqual('hello', ptwit.choose_profile_name('default'))
+        self.assertEqual('world', ptwit.choose_profile_name('default'))
+        self.assertEqual('default', ptwit.choose_profile_name('default'))
+        profile = Profile('ptpt')
+        self.assertRaises(ptwit.PtwitError, ptwit.choose_profile_name, 'default')
+
+    def testGetConsumerAndTokens(self):
+        consumer_key = 'consumer_key'
+        consumer_secret = 'consumer_secret'
+        token_key = 'token_key'
+        token_secret = 'token_secret'
+        # vals = iter([consumer_key, consumer_secret, token_key, token_secret])
+        # def raw_input(prompt=''):
+        #     return vals.next()
+        # ptwit.raw_input = raw_input
+        old_get_consumer = ptwit.get_consumer
+        old_get_oauth = ptwit.get_oauth
+        ptwit.get_consumer = lambda: (consumer_key, consumer_secret)
+        ptwit.get_oauth = lambda ck, cs: (token_key, token_secret)
+        profile = Profile('ptpt')
+        self.assertEqual(ptwit.get_consumer_and_token(profile),
+                         (consumer_key, consumer_secret, token_key, token_secret))
+        ptwit.get_consumer = old_get_consumer
+        ptwit.get_oauth = old_get_oauth
+
+        profile.set('consumer', 'key', consumer_key+'2')
+        profile.set('consumer', 'secret', consumer_secret+'2')
+        profile.set('token', 'key', token_key+'2')
+        profile.set('token', 'secret', token_secret+'2')
+        self.assertEqual(ptwit.get_consumer_and_token(profile),
+                         (consumer_key+'2', consumer_secret+'2', token_key+'2', token_secret+'2'))
+
+    def tearDown(self):
+        ptwit.raw_input = raw_input
 
 if __name__ == '__main__':
     unittest.main()
