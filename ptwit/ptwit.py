@@ -136,16 +136,6 @@ def get_consumer():
         raw_input('Consumer secret: ').strip()
 
 
-# todo: remove it
-def get_dir_create(dir):
-    """
-    Return `dir_name`. If `dir_name' not existed, then create it.
-    """
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
-    return dir
-
-
 class ProfileError(Exception):
     pass
 
@@ -156,9 +146,10 @@ class Profile(object):
 
     def __init__(self, name=None):
         self.name = name
-        self.config_path = os.path.join(
-            get_dir_create(os.path.join(Profile.profile_root, name or '')),
-            'user.conf' if self.name else 'global.conf')
+        dir = os.path.join(Profile.profile_root, name or '')
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+        self.config_path = os.path.join(dir, 'user.conf' if self.name else 'global.conf')
         self._config = None
         self._modified = False
 
