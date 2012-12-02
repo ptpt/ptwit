@@ -152,73 +152,77 @@ class ProfileError(Exception):
 
 class Profile(object):
     profile_root = _PTWIT_CONFIG.PROFILE_DIR
+    _global = None
 
     def __init__(self, name=None):
         self.name = name
-        self.g = Profile() if name else self
         self.config_path = os.path.join(
             get_dir_create(os.path.join(Profile.profile_root, name or '')),
             'user.conf' if self.name else 'global.conf')
-        self.config = ConfigParser.RawConfigParser()
-        fp = open(self.config_path,
-                  'r' if os.path.isfile(self.config_path) else 'w+')
-        self.config.readfp(fp)
-        fp.close()
-        self.modified = False
+        self._config = None
+        self._modified = False
 
-    @classmethod
-    def get_all(cls):
-        return [profile for profile in os.listdir(cls.profile_root)
-                if os.path.isdir(os.path.join(cls.profile_root, profile))
-                and not profile.startswith('.')]
+    @property
+    def config(self):
+        if not self._config:
+            self._config = ConfigParser.RawConfigParser()
+            with open(self.config_path,
+                      'r' if os.path.isfile(self.config_path) else 'w+') as fp:
+                self._config.readfp(fp)
+        return self._config
 
     @property
     def is_global(self):
         return self.name is None
+
+    @classmethod
+    def get_global(cls):
+        if cls._global is None:
+            cls._global = Profile()
+        return cls._global
 
     def set(self, section, option, value):
         if value != self.get(section, option):
             if not self.config.has_section(section):
                 self.config.add_section(section)
             self.config.set(section, option, value)
-            self.modified = True
+            self._modified = True
 
-    def get(self, section, option, g=True):
-        try:
-            return self.config.get(section, option)
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-            if self.is_global or not g:
-                return None
-            else:
-                return self.g.get(section, option)
-
-    def unset(self, section, option=None, g=False):
-        if g:
-            self.g.unset(section, option)
+    def unset(self, section, option=None):
         if option is None:
             self.config.remove_section(section)
         else:
             self.config.remove_option(section, option)
             if not len(self.config.options(section)):
                 self.config.remove_section(section)
-        self.modified = True
+        self._modified = True
 
-    def save(self, g=True):
-        if self.modified:
+    def get(self, section, option):
+        try:
+            return self.config.get(section, option)
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
+            return None
+
+    @classmethod
+    def get_all(cls):
+        if os.path.isdir(cls.profile_root):
+            return [profile for profile in os.listdir(cls.profile_root)
+                    if os.path.isdir(os.path.join(cls.profile_root, profile))
+                    and not profile.startswith('.')]
+        else:
+            return []
+
+    def save(self, force=False):
+        if force or self._modified:
             with open(self.config_path, 'wb') as f:
                 self.config.write(f)
-            self.modified = False
-        if not self.is_global and g:
-            self.g.save()
+            self._modified = False
 
     def clear(self):
         config_folder = os.path.dirname(self.config_path)
         if os.path.isdir(config_folder):
             from shutil import rmtree
-            try:
-                rmtree(config_folder)
-            except OSError:
-                raise ProfileError('Unable to delete "%s".' % config_folder)
+            rmtree(config_folder)
         else:
             raise ProfileError('Profile "%s" doesn\'t exist.' % config_folder)
 
@@ -233,7 +237,7 @@ class ProfileCommands(object):
         self.profile = profile
 
     def set(self):
-        profile = self.profile.g if self.args.g else self.profile
+        profile = Profile.get_global() if self.args.g else self.profile
         try:
             section, option = self.args.option.split('.', 1)
         except ValueError:
@@ -249,7 +253,7 @@ class ProfileCommands(object):
         profile.save()
 
     def unset(self):
-        profile = self.profile.g if self.args.g else self.profile
+        profile = Profile.get_global() if self.args.g else self.profile
         pack = [v.split('.', 1) for v in self.args.option]
         for option in pack:
             if len(option) == 1:
@@ -263,7 +267,7 @@ class ProfileCommands(object):
             print profile
 
     def get(self):
-        profile = self.profile.g if self.args.g else self.profile
+        profile = Profile.get_global() if self.args.g else self.profile
         nonexist = False
         if self.args.option:
             pack = [v.split('.', 1) for v in self.args.option]
@@ -298,20 +302,31 @@ class ProfileCommands(object):
 
     def login(self):
         if not self.args.profile_name:
-            ck, cs, tk, ts = get_consumer_and_token()
+            global_profile = Profile.get_global()
+            ck, cs, tk, ts = get_consumer_and_token(global_profile)
             api = twitter.Api(consumer_key=ck,
                               consumer_secret=cs,
                               access_token_key=tk,
                               access_token_secret=ts)
-            profile = Profile(
-                choose_profile_name(api.VerifyCredentials().screen_name))
-            profile.set('consumer', 'key', ck)
-            profile.set('consumer', 'secret', cs)
-            profile.set('token', 'key', tk)
-            profile.set('token', 'secret', ts)
-            profile.g.set('profile', 'default', profile.name.lower())
-            profile.save()
+            user_profile_name = choose_profile_name(
+                api.VerifyCredentials().screen_name)
+            user_profile = Profile(user_profile_name)
+            global_profile.set('profile', 'default', user_profile_name.lower())
+            # set consumer pairs both in the user profile and global profile
+            if not global_profile.get('consumer', 'key'):
+                global_profile.set('consumer', 'key', ck)
+            user_profile.set('consumer', 'key', ck)
+            if not global_profile.get('consumer', 'secret'):
+                global_profile.set('consumer', 'secret', cs)
+            user_profile.set('consumer', 'secret', cs)
+            # set token pairs
+            user_profile.set('token', 'key', tk)
+            user_profile.set('token', 'secret', ts)
+            # save profiles
+            user_profile.save()
+            global_profile.save()
         elif self.args.profile_name in Profile.get_all():
+            # login the existing profile
             self.args.g = True
             self.args.call = 'set'
             self.args.option = 'profile.default'
@@ -614,27 +629,31 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
-def get_consumer_and_token(profile=None):
-    if profile is None:
-        profile = Profile()
+def get_consumer_and_token(profile):
+    """
+    Get consumer pairs and token pairs from profile,
+    global_profile and prompt in order
+    """
+    global_profile = Profile.get_global()
     consumer_key = profile.get('consumer', 'key')
+    # if consumer pairs not found in user profile
+    # read them from global profile
+    if not consumer_key and not profile.is_global:
+        consumer_key = global_profile.get('consumer', 'key')
     consumer_secret = profile.get('consumer', 'secret')
+    if not consumer_secret and not profile.is_global:
+        consumer_secret = global_profile.get('consumer', 'secret')
     token_key = profile.get('token', 'key')
     token_secret = profile.get('token', 'secret')
     try:
         # login
         if not (consumer_key and consumer_secret):
+            # todo: rename to input_consumer
             consumer_key, consumer_secret = get_consumer()
         if not (token_key and token_secret):
             token_key, token_secret = get_oauth(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
         sys.exit(0)
-    if profile.is_global:
-        if not profile.get('consumer', 'key'):
-            profile.set('consumer', 'key', consumer_key)
-        if not profile.get('consumer', 'secret'):
-            profile.set('consumer', 'secret', consumer_secret)
-        profile.save()
     return consumer_key, consumer_secret, token_key, token_secret
 
 
@@ -656,34 +675,44 @@ def choose_profile_name(default):
 
 def main(argv):
     args = parse_args(argv)
-    profile_name = args.specified_profile or \
-        Profile().get('profile', 'default')
-    profile = Profile(profile_name) if profile_name else None
+    global_profile = Profile.get_global()
+    user_profile_name = args.specified_profile or \
+        global_profile.get('profile', 'default')
+    user_profile = Profile(user_profile_name) if user_profile_name else None
     if args.type == ProfileCommands:
-        commands = ProfileCommands(args, profile)
+        # handle profile commands and quit
+        commands = ProfileCommands(args, user_profile or global_profile)
         commands.call(args.function)
         sys.exit(0)
-    ck, cs, tk, ts = get_consumer_and_token(profile)
+    ck, cs, tk, ts = get_consumer_and_token(user_profile or global_profile)
     api = twitter.Api(
         consumer_key=ck,
         consumer_secret=cs,
         access_token_key=tk,
         access_token_secret=ts)
-    if not profile:
-        profile = Profile(
-            choose_profile_name(api.VerifyCredentials().screen_name))
-    profile.g.set('profile', 'default',
-                  profile.name.lower())
-    profile.set('consumer', 'key', ck)
-    profile.set('consumer', 'secret', cs)
-    profile.set('token', 'key', tk)
-    profile.set('token', 'secret', ts)
-    profile.save()
+    if not user_profile:
+        user_profile_name = choose_profile_name(
+            api.VerifyCredentials().screen_name)
+        user_profile = Profile(user_profile_name)
+    global_profile.set('profile', 'default', user_profile_name)
+    # set consumer pairs both in the user profile and global profile
+    if not global_profile.get('consumer', 'key'):
+        global_profile.set('consumer', 'key', ck)
+    user_profile.set('consumer', 'key', ck)
+    if not global_profile.get('consumer', 'secret'):
+        global_profile.set('consumer', 'secret', cs)
+    user_profile.set('consumer', 'secret', cs)
+    # set token pairs in user profile
+    user_profile.set('token', 'key', tk)
+    user_profile.set('token', 'secret', ts)
+    # save both
+    user_profile.save()
+    global_profile.save()
     if args.type == TwitterCommands:
-        commands = TwitterCommands(api, args, profile)
+        # handle twitter comamnds
+        commands = TwitterCommands(api, args, user_profile)
         commands.call(args.function)
-    else:
-        raise PtwitError('Invalid command')
+        sys.exit(0)
 
 
 def cmd():

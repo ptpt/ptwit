@@ -4,7 +4,8 @@ import sys
 from shutil import rmtree
 from time import strftime
 from datetime import datetime
-from ptwit import Profile, lookup, format_dictionary
+from ptwit.ptwit import Profile, lookup, format_dictionary
+from ptwit import ptwit
 
 
 class TestFormat(unittest.TestCase):
@@ -40,31 +41,35 @@ class TestFormat(unittest.TestCase):
 
 class TestProfile(unittest.TestCase):
     def setUp(self):
-        root = os.path.join(os.path.dirname(__file__), 'profile_dir_for_test')
-        Profile.profile_root = root
-        self.profile = Profile('ptpt')
+        Profile.profile_root = os.path.join(os.path.dirname(__file__),
+                                            'tmp_profile_dir')
+
+    def testGlobal(self):
+        # always return the same global profile
+        self.assertTrue(Profile.get_global() is Profile.get_global())
 
     def testDirectory(self):
+        profile = Profile('ptpt')
         self.assertTrue(os.path.isdir(Profile.profile_root))
-        self.assertTrue(os.path.isfile(os.path.join(Profile.profile_root, 'global.conf')))
-        self.assertTrue(os.path.isdir(os.path.dirname(self.profile.config_path)))
-        self.assertTrue(os.path.isfile(self.profile.config_path))
-        self.assertRaises(Exception, Profile, 'global.conf')
+        self.assertFalse(os.path.isfile(os.path.join(Profile.profile_root, 'global.conf')))
+        self.assertFalse(os.path.isfile(profile.config_path))
 
     def testSet(self):
-        self.profile.set('hello', 'world', True)
-        self.profile.save()
-        with open(self.profile.config_path) as f:
+        profile = Profile('ptpt')
+        profile.set('hello', 'world', True)
+        profile.save()
+        with open(profile.config_path) as f:
             buf = f.read()
             self.assertEqual(buf, '''[hello]
 world = True
 
 ''')
-        self.profile.g.set('global', 'hello', 12)
-        self.profile.g.set('hello', 'world', 13)
-        self.profile.save()
-        with open(self.profile.g.config_path) as f:
-            buf = f.read()
+        global_profile = Profile()
+        global_profile.set('global', 'hello', 12)
+        global_profile.set('hello', 'world', 13)
+        global_profile.save(force=True)
+        with open(global_profile.config_path) as fp:
+            buf = fp.read()
             self.assertEqual(buf, '''[global]
 hello = 12
 
@@ -75,46 +80,52 @@ world = 13
 
     def testGet(self):
         self.testSet()
-        self.assertEqual(self.profile.get('hello', 'world'), True)
         profile = Profile('ptpt')
+        global_profile = Profile()
         self.assertEqual(profile.get('hello', 'world'), 'True')
-        self.assertEqual(profile.get('global', 'hello'), '12')
-        self.assertEqual(profile.get('global', 'hello', g=False), None)
-        self.assertEqual(profile.get('hello', 'world'), 'True')
-        self.assertEqual(profile.get('hello', 'world', g=True), 'True')
+        self.assertEqual(global_profile.get('global', 'hello'), '12')
+        self.assertEqual(global_profile.get('hello', 'world'), '13')
+        self.assertIsNone(global_profile.get('hello', 'nonexists'))
+        self.assertIsNone(global_profile.get('nonexists', 'nonexists'))
 
     def testUnset(self):
         self.testSet()
-        self.profile.g.unset('global', 'hello')
-        self.profile.g.save()
-        with open(self.profile.g.config_path) as f:
+        profile = Profile('ptpt')
+        global_profile = Profile()
+        global_profile.unset('global', 'hello')
+        global_profile.save()
+        with open(global_profile.config_path) as f:
             buf = f.read()
             self.assertEqual(buf, '[hello]\nworld = 13\n\n')
-        self.profile.unset('hello', 'world', g=True)
-        self.profile.save()
-        with open(self.profile.config_path) as f:
-            buf = f.read()
-            self.assertEqual(buf, '')
-        with open(self.profile.g.config_path) as f:
+        profile.unset('hello', 'world')
+        profile.save()
+        with open(profile.config_path) as f:
             buf = f.read()
             self.assertEqual(buf, '')
 
     def testClear(self):
-        self.profile.clear()
-        self.assertFalse(os.path.isfile(self.profile.config_path))
-        self.assertFalse(os.path.isdir(os.path.dirname(self.profile.config_path)))
+        profile = Profile('ptpt')
+        profile.clear()
+        self.assertFalse(os.path.isfile(profile.config_path))
+        self.assertFalse(os.path.isdir(os.path.dirname(profile.config_path)))
 
     def testIsGlobal(self):
-        self.assertFalse(self.profile.is_global)
-        self.assertTrue(self.profile.g.is_global)
-
-    def tearDown(self):
-        rmtree(Profile.profile_root)
-        pass
+        profile = Profile('ptpt')
+        self.assertFalse(profile.is_global)
+        self.assertTrue(Profile.get_global().is_global)
+        self.assertTrue(Profile().is_global)
 
     def testGetAll(self):
+        self.assertEqual(Profile.get_all(), [])
+        profile = Profile('ptpt')
         all = Profile.get_all()
-        self.assertEqual([self.profile.name], all)
+        self.assertEqual([profile.name], all)
+
+    def tearDown(self):
+        if os.path.isdir(Profile.profile_root):
+            rmtree(Profile.profile_root)
+
+
 
 if __name__ == '__main__':
     unittest.main()
