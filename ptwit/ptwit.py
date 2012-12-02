@@ -2,6 +2,7 @@
 
 import sys
 import os
+import time
 import twitter
 import argparse
 import ConfigParser
@@ -115,6 +116,7 @@ def get_oauth(consumer_key, consumer_secret):
         (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
     print 'Opening:', authorization_url
     webbrowser.open_new_tab(authorization_url)
+    time.sleep(1)
     pincode = raw_input('Enter the pincode: ')
     token = oauth.Token(request_token['oauth_token'],
                         request_token['oauth_token_secret'])
