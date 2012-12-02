@@ -136,15 +136,13 @@ def get_consumer():
         raw_input('Consumer secret: ').strip()
 
 
+# todo: remove it
 def get_dir_create(dir):
     """
     Return `dir_name`. If `dir_name' not existed, then create it.
     """
     if not os.path.isdir(dir):
-        try:
-            os.mkdir(dir)
-        except OSError:
-            raise PtwitError('Unable to create %s.' % dir)
+        os.makedirs(dir)
     return dir
 
 
