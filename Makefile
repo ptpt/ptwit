@@ -1,8 +1,8 @@
-pip:
-	sudo pip install ptwit
-
 setup:
 	sudo python setup.py install
+
+pip:
+	sudo pip install ptwit
 
 remove:
 	sudo pip uninstall ptwit
