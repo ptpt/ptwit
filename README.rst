@@ -55,11 +55,6 @@ Post a new tweet::
    ptwit post hello world
    ptwit post < tweet.txt
 
-Get public timeline::
-
-   ptwit public
-
-
 Send message to someone::
 
    ptwit send someone hello, ptwit is awesome
