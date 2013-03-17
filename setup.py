@@ -14,7 +14,7 @@ def readme():
         return f.read()
 
 setup(name='ptwit',
-      version='0.0.3',
+      version='0.0.4',
       description='A simple twitter command line client',
       long_description=readme(),
       classifiers=[
