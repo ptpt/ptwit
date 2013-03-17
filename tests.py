@@ -150,14 +150,14 @@ class TestInput(unittest.TestCase):
         # def raw_input(prompt=''):
         #     return vals.next()
         # ptwit.raw_input = raw_input
-        old_get_consumer = ptwit.get_consumer
+        old_get_consumer = ptwit.input_consumer_pair
         old_get_oauth = ptwit.get_oauth
-        ptwit.get_consumer = lambda: (consumer_key, consumer_secret)
+        ptwit.input_consumer_pair = lambda: (consumer_key, consumer_secret)
         ptwit.get_oauth = lambda ck, cs: (token_key, token_secret)
         profile = Profile('ptpt')
         self.assertEqual(ptwit.get_consumer_and_token(profile),
                          (consumer_key, consumer_secret, token_key, token_secret))
-        ptwit.get_consumer = old_get_consumer
+        ptwit.input_consumer_pair = old_get_consumer
         ptwit.get_oauth = old_get_oauth
 
         profile.set('consumer', 'key', consumer_key+'2')
