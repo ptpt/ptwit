@@ -394,8 +394,8 @@ class TwitterCommands(object):
         for message in messages:
             self._print_message(message)
 
-    def public(self):
-        self._print_tweets(self.api.GetPublicTimeline())
+    # def public(self):
+    #     self._print_tweets(self.api.GetPublicTimeline())
 
     def post(self):
         if len(self.args.post):
@@ -527,8 +527,8 @@ def parse_args(argv):
     p.add_argument('profile_name', nargs='?')
     p.set_defaults(type=ProfileCommands, function='login')
     # public
-    p = subparsers.add_parser('public', help='list public timeline')
-    p.set_defaults(type=TwitterCommands, function='public')
+    # p = subparsers.add_parser('public', help='list public timeline')
+    # p.set_defaults(type=TwitterCommands, function='public')
     # followings
     p = subparsers.add_parser('following', help='list following')
     p.add_argument('user', nargs='?')
