@@ -149,7 +149,8 @@ class Profile(object):
         dir = os.path.join(Profile.profile_root, name or '')
         if not os.path.isdir(dir):
             os.makedirs(dir)
-        self.config_path = os.path.join(dir, 'user.conf' if self.name else 'global.conf')
+        self.config_path = os.path.join(
+            dir, 'user.conf' if self.name else 'global.conf')
         self._config = None
         self._modified = False
 
@@ -294,15 +295,17 @@ class ProfileCommands(object):
     def login(self):
         if not self.args.profile_name:
             global_profile = Profile.get_global()
+
             ck, cs, tk, ts = get_consumer_and_token(global_profile)
             api = twitter.Api(consumer_key=ck,
                               consumer_secret=cs,
                               access_token_key=tk,
                               access_token_secret=ts)
-            user_profile_name = choose_profile_name(
-                api.VerifyCredentials().screen_name)
+            user_profile_name = \
+                choose_profile_name(api.VerifyCredentials().screen_name)
             user_profile = Profile(user_profile_name)
             global_profile.set('profile', 'default', user_profile_name.lower())
+
             # set consumer pairs both in the user profile and global profile
             if not global_profile.get('consumer', 'key'):
                 global_profile.set('consumer', 'key', ck)
@@ -310,12 +313,15 @@ class ProfileCommands(object):
             if not global_profile.get('consumer', 'secret'):
                 global_profile.set('consumer', 'secret', cs)
             user_profile.set('consumer', 'secret', cs)
+
             # set token pairs
             user_profile.set('token', 'key', tk)
             user_profile.set('token', 'secret', ts)
+
             # save profiles
             user_profile.save()
             global_profile.save()
+
         elif self.args.profile_name in Profile.get_all():
             # login the existing profile
             self.args.g = True
@@ -490,11 +496,11 @@ class TwitterCommands(object):
 
     def follow(self):
         user = self.api.CreateFriendship(self.args.user)
-        print 'you have requested to follow @%s' % user.screen_name
+        print 'You have requested to follow @%s' % user.screen_name
 
     def unfollow(self):
         user = self.api.DestroyFriendship(self.args.user)
-        print 'you have unfollowed @%s' % user.screen_name
+        print 'You have unfollowed @%s' % user.screen_name
 
     def faves(self):
         self._print_tweets(self.api.GetFavorites(user=self.args.user,
@@ -513,6 +519,7 @@ class TwitterCommands(object):
 
 
 def parse_args(argv):
+    """Parse command arguments."""
     parser = argparse.ArgumentParser(description='Twitter command-line.',
                                      prog='ptwit')
     parser.add_argument('-p', dest='specified_profile', metavar='profile',
@@ -522,77 +529,94 @@ def parse_args(argv):
     # todo: default command
     # twitter commands
     subparsers = parser.add_subparsers(title='twitter commands')
+
     # login
     p = subparsers.add_parser('login', help='login')
     p.add_argument('profile_name', nargs='?')
     p.set_defaults(type=ProfileCommands, function='login')
+
     # public
     # p = subparsers.add_parser('public', help='list public timeline')
     # p.set_defaults(type=TwitterCommands, function='public')
+
     # followings
     p = subparsers.add_parser('following', help='list following')
     p.add_argument('user', nargs='?')
     p.set_defaults(type=TwitterCommands, function='following')
+
     # followers
     p = subparsers.add_parser('followers', help='list followers')
     p.add_argument('user', nargs='?')
     p.set_defaults(type=TwitterCommands, function='followers')
+
     # follow
     p = subparsers.add_parser('follow', help='follow someone')
     p.add_argument('user')
     p.set_defaults(type=TwitterCommands, function='follow')
+
     # unfollow
     p = subparsers.add_parser('unfollow', help='unfollow someone')
     p.add_argument('user')
     p.set_defaults(type=TwitterCommands, function='unfollow')
+
     # tweets
     p = subparsers.add_parser('tweets', help='list tweets')
     p.add_argument('-c', dest='count', type=int)
     p.add_argument('-p', dest='page', type=int)
     p.add_argument('user', nargs='?')
     p.set_defaults(type=TwitterCommands, function='tweets')
+
     # timeline
     p = subparsers.add_parser('timeline', help='list friends timeline')
     p.add_argument('-c', dest='count', type=int)
     p.add_argument('-p', dest='page', type=int)
     p.set_defaults(type=TwitterCommands, function='timeline')
+
     # faves
     p = subparsers.add_parser('faves', help='list favourites')
     p.add_argument('-p', dest='page', type=int)
     p.add_argument('user', nargs='?')
     p.set_defaults(type=TwitterCommands, function='faves')
+
     # post
     p = subparsers.add_parser('post', help='post a tweet')
     p.add_argument('post', nargs='*')
     p.set_defaults(type=TwitterCommands, function='post')
+
     # mentions
     p = subparsers.add_parser('mentions', help='list mentions')
     p.add_argument('-p', dest='page', type=int)
     p.add_argument('-c', dest='count', type=int)
     p.set_defaults(type=TwitterCommands, function='mentions')
+
     # messages
     p = subparsers.add_parser('messages', help='list messages')
     p.add_argument('-p', dest='page', type=int)
     p.add_argument('-c', dest='count', type=int)
     p.set_defaults(type=TwitterCommands, function='messages')
+
     # send
     p = subparsers.add_parser('send', help='send direct message')
     p.add_argument('user')
     p.add_argument('message', nargs='*')
     p.set_defaults(type=TwitterCommands, function='send')
+
     # replies
     p = subparsers.add_parser('replies', help='list replies')
     p.add_argument('-p', dest='page', type=int)
     p.add_argument('-c', dest='count', type=int)
     p.set_defaults(type=TwitterCommands, function='replies')
+
     # whois
     p = subparsers.add_parser('whois', help='show user information')
     p.add_argument('users', nargs='+')
     p.set_defaults(type=TwitterCommands, function='whois')
+
     # search
     p = subparsers.add_parser('search', help='search twitter')
     p.add_argument('term', nargs='+')
     p.set_defaults(type=TwitterCommands, function='search')
+
     # profile commands
     profile_parser = subparsers.add_parser('profile', help='manage profiles')
     profile_parser.add_argument('-g', action='store_true',
@@ -600,39 +624,42 @@ def parse_args(argv):
                                 help='apply global configuration only')
     pp = profile_parser.add_subparsers(title='profile',
                                        help='profile commands')
+
     # todo default profile command
     # profile set
     p = pp.add_parser('set', help='set option')
     p.add_argument('option', metavar='SECTION.OPTION')
-    p.add_argument('value')
+    p.add_argument('value', metavar='VALUE')
     p.set_defaults(type=ProfileCommands, function='set')
+
     # profile get
     p = pp.add_parser('get', help='get option')
     p.add_argument('option', metavar='SECTION.OPTION', nargs='*')
     p.set_defaults(type=ProfileCommands, function='get')
+
     # profile unset
     p = pp.add_parser('unset', help='unset option')
     p.add_argument('option', metavar='SECTION.OPTION', nargs='+')
     p.set_defaults(type=ProfileCommands, function='unset')
+
     # profile list all
     p = pp.add_parser('all', help='list all profiles')
     p.set_defaults(type=ProfileCommands, function='all')
+
     # profile remove profiles
     p = pp.add_parser('remove', help='remove profiles')
     p.add_argument('profile', nargs='+')
     p.set_defaults(type=ProfileCommands, function='remove')
+
     return parser.parse_args(argv)
 
 
 def get_consumer_and_token(profile):
-    """
-    Get consumer pairs and token pairs from profile,
-    global_profile and prompt in order
-    """
+    """Get consumer pairs and token pairs from profile or prompt."""
     global_profile = Profile.get_global()
     consumer_key = profile.get('consumer', 'key')
-    # if consumer pairs not found in user profile
-    # read them from global profile
+
+    # read consumer pairs from user profile, and then global profile
     if not consumer_key and not profile.is_global:
         consumer_key = global_profile.get('consumer', 'key')
     consumer_secret = profile.get('consumer', 'secret')
@@ -640,15 +667,19 @@ def get_consumer_and_token(profile):
         consumer_secret = global_profile.get('consumer', 'secret')
     token_key = profile.get('token', 'key')
     token_secret = profile.get('token', 'secret')
+
     try:
-        # login
+        # if consumer pairs still not found, then let user input
         if not (consumer_key and consumer_secret):
             # todo: rename to input_consumer
             consumer_key, consumer_secret = get_consumer()
+
+        # if token pairs still not found, get them from twitter oauth server
         if not (token_key and token_secret):
             token_key, token_secret = get_oauth(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
         sys.exit(0)
+
     return consumer_key, consumer_secret, token_key, token_secret
 
 
@@ -670,27 +701,39 @@ def choose_profile_name(default):
 
 def main(argv):
     args = parse_args(argv)
+
     global_profile = Profile.get_global()
+
+    # get default user from global profile's default section
     user_profile_name = args.specified_profile or \
         global_profile.get('profile', 'default')
     user_profile = Profile(user_profile_name) if user_profile_name else None
+
+    # if it is profile subcommands, them handle profile commands and quit
     if args.type == ProfileCommands:
-        # handle profile commands and quit
         commands = ProfileCommands(args, user_profile or global_profile)
         commands.call(args.function)
         sys.exit(0)
+
+    # try to get customer pairs and token pairs from profiles or prompt
     ck, cs, tk, ts = get_consumer_and_token(user_profile or global_profile)
     api = twitter.Api(
         consumer_key=ck,
         consumer_secret=cs,
         access_token_key=tk,
         access_token_secret=ts)
+
+    # if user profile not found, create it
     if not user_profile:
         user_profile_name = choose_profile_name(
             api.VerifyCredentials().screen_name)
         user_profile = Profile(user_profile_name)
+
+    # if global profile's default section is empty, oh, you will be
+    # the default user
     if not global_profile.get('profile', 'default'):
         global_profile.set('profile', 'default', user_profile_name)
+
     # set consumer pairs both in the user profile and global profile
     if not global_profile.get('consumer', 'key'):
         global_profile.set('consumer', 'key', ck)
@@ -698,14 +741,18 @@ def main(argv):
     if not global_profile.get('consumer', 'secret'):
         global_profile.set('consumer', 'secret', cs)
     user_profile.set('consumer', 'secret', cs)
-    # set token pairs in user profile
+
+    # set token pairs in the user profile
     user_profile.set('token', 'key', tk)
     user_profile.set('token', 'secret', ts)
-    # save both
+
+    # save both profile
     user_profile.save()
     global_profile.save()
+
+    # handle twitter comamnds
     if args.type == TwitterCommands:
-        # handle twitter comamnds
+
         commands = TwitterCommands(api, args, user_profile)
         commands.call(args.function)
         sys.exit(0)
