@@ -4,7 +4,7 @@ import sys
 from shutil import rmtree
 from time import strftime
 from datetime import datetime
-from ptwit.ptwit import Profile, lookup, format_dictionary
+from ptwit.ptwit import Profile, lookup, render_template
 from ptwit import ptwit
 
 
@@ -25,18 +25,18 @@ class TestFormat(unittest.TestCase):
         self.assertIsNone(lookup('status.name', profile))
         self.assertEqual(lookup('web.site', profile), 'google.com')
 
-    def testFormatDictionary(self):
+    def test_render_template(self):
         profile = {'user': {'name': 'pt',
                             'age': 12},
                    'status': 'good',
                    'web.site': 'taopeng.me',
                    'y': 'not year'}
-        self.assertEqual(format_dictionary('%user%', profile), "{'age': 12, 'name': 'pt'}")
-        self.assertEqual(format_dictionary('%user.name% is good', profile), 'pt is good')
-        self.assertEqual(format_dictionary('%y%', profile), 'not year')
-        self.assertEqual(format_dictionary('%%', profile), '%')
+        self.assertEqual(render_template('%user%', profile), "{'age': 12, 'name': 'pt'}")
+        self.assertEqual(render_template('%user.name% is good', profile), 'pt is good')
+        self.assertEqual(render_template('%y%', profile), 'not year')
+        self.assertEqual(render_template('%%', profile), '%')
         now = datetime.utcnow()
-        self.assertEqual(format_dictionary('%y%', profile, now), now.strftime('%y'))
+        self.assertEqual(render_template('%y%', profile, now), now.strftime('%y'))
 
 
 class TestProfile(unittest.TestCase):
@@ -169,6 +169,9 @@ class TestInput(unittest.TestCase):
 
     def tearDown(self):
         ptwit.raw_input = raw_input
+        if os.path.isdir(Profile.profile_root):
+            rmtree(Profile.profile_root)
+
 
 if __name__ == '__main__':
     unittest.main()

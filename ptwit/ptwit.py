@@ -34,12 +34,11 @@ class PtwitError(Exception):
 
 def lookup(key, dictionary):
     """
-    Lookup `dictionary' with `key' recursively.
-    e.g. lookup('user.name',
-                {'user':{'name':'pt',
-                         'age':24},
-                 'status':'hello world'})
-    will return 'pt'.
+    Lookup a flatten key in a dictionary recursively.
+    The key is a series of keys concatenated by dot.
+
+    for example:
+    lookup('user.name', dictionary) does the same thing as dictionary['user']['name'] does.
     """
     if key in dictionary:
         if isinstance(dictionary[key], basestring):
@@ -57,42 +56,42 @@ def lookup(key, dictionary):
             return None
 
 
-def format_dictionary(format, dictionary, time=None):
+def render_template(template, data, time=None):
     """
-    Format a string out of format-string and dictionary.
+    Render template using a dictionary data.
 
-    Arguments:
-    format: format control string
-    dictionary: dictionary where values are taken from
-    time: None or a function, which takes `dictionary' as input and
-    get its time information (if existed).
-    The time information is use to fill up format string,
-    such as %y%, %m%, etc.
-
-    Returns:
-    A formatted string
+    All strings between a pair of percent sign will be replaced by the
+    value found in the data dictionary.
     """
     state = -1
     text = ''
-    for i in xrange(len(format)):
-        if format[i] == '%':
+    for i in xrange(len(template)):
+        if template[i] == '%':
             if state < 0:
+                # it's open persent sign
                 state = i + 1
             else:
-                tag = format[state:i]
+                # it's close persent sign
+                tag = template[state:i]
                 if tag == '':
+                    # if two persent signs found together,
+                    # replace them with a single persent sign
                     text += '%'
                 else:
                     if time and tag in list('aAbBcdHIJmMpSUwWxXyYZ'):
+                        # time variables
                         value = time.strftime('%' + tag)
                     else:
-                        value = unicode(lookup(tag, dictionary))
+                        # data variables
+                        value = unicode(lookup(tag, data))
+                    # concatenate them and store the result
                     text += '%' + tag + '%' if value is None else value
+                # remember to mark persent sign state as closed
                 state = -1
         elif state == -1:
-            text = text + format[i]
+            text = text + template[i]
     if state >= 0:
-        text = text + '%' + format[state:]
+        text = text + '%' + template[state:]
     return text
 
 
@@ -345,8 +344,8 @@ class TwitterCommands(object):
         user = user.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'user') or \
-        print format_dictionary(format, user).encode('utf-8')
             FORMAT_USER
+        print render_template(format, user).encode('utf-8')
 
     def _print_users(self, users):
         for user in users:
@@ -356,12 +355,11 @@ class TwitterCommands(object):
         tweet = tweet.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'tweet') or \
-        print format_dictionary(
-            format, tweet,
-            time=datetime.strptime(
-                tweet['created_at'],
-                '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
             FORMAT_TWEET
+        created_at = datetime.strptime(
+            tweet['created_at'],
+            '%a %b %d %H:%M:%S +0000 %Y')
+        print render_template(format, tweet, time=created_at).encode('utf-8')
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -371,8 +369,8 @@ class TwitterCommands(object):
         tweet = tweet.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'search') or \
-        print format_dictionary(
             FORMAT_SEARCH
+        print render_template(
             format, tweet,
             time=datetime.strptime(tweet['created_at'],
                                    '%a, %d %b %Y %H:%M:%S +0000'))
@@ -385,8 +383,8 @@ class TwitterCommands(object):
         message = message.AsDict()
         format = self.args.specified_format or \
             self.profile.get('format', 'message') or \
-        print format_dictionary(
             FORMAT_MESSAGE
+        print render_template(
             format, message,
             time=datetime.strptime(
                 message['created_at'],
