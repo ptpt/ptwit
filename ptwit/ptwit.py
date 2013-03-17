@@ -482,7 +482,11 @@ class TwitterCommands(object):
         self._print_users(self.api.GetFriends(self.args.user))
 
     def followers(self):
-        self._print_users(self.api.GetFollowers(page=self.args.page))
+        if self.args.user:
+            user = self.api.GetUser(self.args.user)
+            self._print_users(self.api.GetFollowers(user=user))
+        else:
+            self._print_users(self.api.GetFollowers())
 
     def follow(self):
         user = self.api.CreateFriendship(self.args.user)
@@ -527,10 +531,11 @@ def parse_args(argv):
     p.set_defaults(type=TwitterCommands, function='public')
     # followings
     p = subparsers.add_parser('following', help='list following')
+    p.add_argument('user', nargs='?')
     p.set_defaults(type=TwitterCommands, function='following')
     # followers
     p = subparsers.add_parser('followers', help='list followers')
-    p.add_argument('-p', dest='page', type=int)
+    p.add_argument('user', nargs='?')
     p.set_defaults(type=TwitterCommands, function='followers')
     # follow
     p = subparsers.add_parser('follow', help='follow someone')
@@ -710,7 +715,7 @@ def cmd():
     #todo: handle encoded text
     try:
         main(sys.argv[1:])
-    except (PtwitError, ProfileError, ProfileCommandsError) as err:
+    except (twitter.TwitterError, PtwitError, ProfileError, ProfileCommandsError) as err:
         print >> sys.stderr, 'Error: %s' % err.message
         sys.exit(1)
     sys.exit(0)
