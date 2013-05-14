@@ -6,6 +6,7 @@ import time
 import twitter
 import argparse
 import ConfigParser
+from HTMLParser import HTMLParser
 from datetime import datetime
 
 
@@ -370,6 +371,8 @@ class ProfileCommands(object):
 
 
 class TwitterCommands(object):
+    html_parser = HTMLParser()
+
     def __init__(self, api, args, profile):
         self.api = api
         self.args = args
@@ -388,6 +391,7 @@ class TwitterCommands(object):
 
     def _print_tweet(self, tweet):
         tweet = tweet.AsDict()
+        tweet['text'] = self.html_parser.unescape(tweet['text'])
         template = self.args.specified_format or \
             self.profile.get('format', 'tweet') or \
             FORMAT_TWEET
@@ -402,6 +406,7 @@ class TwitterCommands(object):
 
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
+        tweet['text'] = self.html_parser.unescape(tweet['text'])
         template = self.args.specified_format or \
             self.profile.get('format', 'search') or \
             FORMAT_SEARCH
@@ -801,7 +806,6 @@ def main(argv):
 
 
 def cmd():
-    #todo: handle encoded text
     try:
         main(sys.argv[1:])
     except (twitter.TwitterError, PtwitError,
