@@ -442,6 +442,8 @@ class TwitterCommands(object):
             post = ' '.join(self.args.post)
         else:
             post = sys.stdin.read()
+        # convert to unicode
+        post = post.decode('utf-8')
         self._print_tweet(self.api.PostUpdate(post))
 
     def tweets(self):
@@ -516,6 +518,8 @@ class TwitterCommands(object):
             message = ' '.join(self.args.message)
         else:
             message = sys.stdin.read()
+        # convert to unicode
+        message = message.decode('utf-8')
         self._print_message(self.api.PostDirectMessage(user, message))
 
     def following(self):
@@ -541,7 +545,10 @@ class TwitterCommands(object):
                                                  page=self.args.page))
 
     def search(self):
-        tweets = self.api.GetSearch(term=' '.join(self.args.term))
+        term = ' '.join(self.args.term)
+        # convert to unicode
+        term = term.decode('utf-8')
+        tweets = self.api.GetSearch(term=term) # todo: can't encode unicode; fix it
         self._print_searches(tweets)
 
     def whois(self):
