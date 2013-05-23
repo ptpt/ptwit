@@ -5,9 +5,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-install_requires = [
-    'oauth2',
-    'python-twitter']
+install_requires = ['python-twitter']
 
 def readme():
     with open('README.rst') as f:
