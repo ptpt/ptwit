@@ -466,7 +466,7 @@ class TwitterCommands(object):
                 page=self.args.page,
                 count=self.args.count)
         self._print_tweets(tweets)
-        if len(tweets):
+        if len(tweets) and self.args.page is None:
             self.profile.set('since', 'timeline', tweets[0].id)
             self.profile.save()
 
@@ -481,7 +481,7 @@ class TwitterCommands(object):
                 # count=self.args.count,
                 page=self.args.page)
         self._print_tweets(tweets)
-        if len(tweets):
+        if len(tweets) and self.args.page is None:
             self.profile.set('since', 'mentions', tweets[0].id)
             self.profile.save()
 
@@ -495,7 +495,7 @@ class TwitterCommands(object):
                 # count=self.args.count,
                 page=self.args.page)
         self._print_tweets(tweets)
-        if len(tweets):
+        if len(tweets) and self.args.page is None:
             self.profile.set('since', 'replies', tweets[0].id)
             self.profile.save()
 
@@ -508,7 +508,7 @@ class TwitterCommands(object):
             messages = self.api.GetDirectMessages(
                 page=self.args.page)
         self._print_messages(messages)
-        if len(messages):
+        if len(messages) and self.args.page is None:
             self.profile.set('since', 'messages', messages[0].id)
             self.profile.save()
 
