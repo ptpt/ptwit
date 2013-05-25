@@ -16,6 +16,17 @@ class TestTwitterConfig(unittest.TestCase):
     def tearDown(self):
         os.remove(self.filename)
 
+    def test_open(self):
+        filename = tempfile.mktemp()
+        # create if config file does not exist
+        config = TwitterConfig(filename)
+        self.assertTrue(os.path.isfile(filename))
+        os.remove(filename)
+        # if the path is a directory?
+        dir = tempfile.mkdtemp()
+        self.assertRaises(IOError, TwitterConfig, dir)
+        os.removedirs(dir)
+
     def test_set(self):
         config = TwitterConfig(self.filename)
         config.set('option', 'value')  # save hello=world to general section

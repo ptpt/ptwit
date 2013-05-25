@@ -1,3 +1,4 @@
+import os
 import ConfigParser
 
 
@@ -5,6 +6,9 @@ class TwitterConfig(object):
     def __init__(self, filename):
         self.filename = filename
         self.config = ConfigParser.RawConfigParser()
+        # create file if not exists
+        if not os.path.exists(self.filename):
+            open(self.filename, 'w').close()
         with open(self.filename) as fp:
             self.config.readfp(fp)
 
