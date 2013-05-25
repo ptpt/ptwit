@@ -208,7 +208,7 @@ class Config(object):
         self._modified = True
 
     def get(self, section, option):
-        """ Return the value of sepcified option. """
+        """ Return the value of specified option. """
         try:
             return self.config.get(section, option)
         except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
@@ -359,8 +359,7 @@ class ConfigCommands(object):
             self.args.value = self.args.config_name
             self.call()
         else:
-            raise ConfigCommandsError('Config "%s" doesn\'t exist' %
-                                       self.args.config_name)
+            raise ConfigCommandsError('Config "%s" doesn\'t exist' % self.args.config_name)
 
     def call(self, function=None):
         if function is None:
@@ -547,7 +546,7 @@ class TwitterCommands(object):
         term = ' '.join(self.args.term)
         # convert to unicode
         term = term.decode('utf-8')
-        tweets = self.api.GetSearch(term=term) # todo: can't encode unicode; fix it
+        tweets = self.api.GetSearch(term=term)  # todo: can't encode unicode; fix it
         self._print_searches(tweets)
 
     def whois(self):
