@@ -38,6 +38,9 @@ class TwitterConfig(object):
         self.config.remove_section(section)
         return self
 
+    def list_accounts(self):
+        return [section for section in self.config.sections() if section != 'general']
+
     def save(self, filename=None):
         filename = filename or self.filename
         with open(filename, 'w') as fp:

@@ -52,10 +52,17 @@ class TestTwitterConfig(unittest.TestCase):
         self.assertIsNone(config.get('format', account='Tao'))
         self.assertIsNone(config.get('option'))
 
-    def test_remove(self):
+    def test_remove_account(self):
         config = TwitterConfig(self.filename)
         config.set('option', 'value', account='Tao')
         config.remove_account('Tao')
+
+    def test_list_account(self):
+        config = TwitterConfig(self.filename)
+        self.assertEqual(config.list_accounts(), [])
+        config.set('option', 'value')
+        config.set('option', 'value', account='Tao')
+        self.assertEqual(config.list_accounts(), ['Tao'])
 
     def test_save(self):
         config = TwitterConfig(self.filename)
