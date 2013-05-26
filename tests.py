@@ -23,9 +23,9 @@ class TestTwitterConfig(unittest.TestCase):
         self.assertTrue(os.path.isfile(filename))
         os.remove(filename)
         # if the path is a directory?
-        dir = tempfile.mkdtemp()
-        self.assertRaises(IOError, TwitterConfig, dir)
-        os.removedirs(dir)
+        dirname = tempfile.mkdtemp()
+        self.assertRaises(IOError, TwitterConfig, dirname)
+        os.removedirs(dirname)
 
     def test_set(self):
         config = TwitterConfig(self.filename)
@@ -76,8 +76,8 @@ class TestTwitterConfig(unittest.TestCase):
         self.assertTrue(content.find('name'))
 
 
-class TestFormat(unittest.TestCase):
-    def testLookup(self):
+class TestTemplate(unittest.TestCase):
+    def test_lookup(self):
         profile = {
             'user': {'name': 'pt', 'age': 24},
             'status': 'hello world',
@@ -106,22 +106,22 @@ class TestFormat(unittest.TestCase):
         self.assertEqual(render_template('%y%', profile, now), now.strftime('%y'))
 
 
-class TestProfile(unittest.TestCase):
+class TestConfig(unittest.TestCase):
     def setUp(self):
         Config.config_root = os.path.join(os.path.dirname(__file__),
                                             'tmp_profile_dir')
 
-    def testGlobal(self):
+    def test_global(self):
         # always return the same global profile
         self.assertTrue(Config.get_global() is Config.get_global())
 
-    def testDirectory(self):
+    def test_directory(self):
         profile = Config('ptpt')
         self.assertTrue(os.path.isdir(Config.config_root))
         self.assertFalse(os.path.isfile(os.path.join(Config.config_root, 'global.conf')))
         self.assertFalse(os.path.isfile(profile.config_path))
 
-    def testSet(self):
+    def test_set(self):
         profile = Config('ptpt')
         profile.set('hello', 'world', True)
         profile.save()
@@ -145,8 +145,8 @@ world = 13
 
 ''')
 
-    def testGet(self):
-        self.testSet()
+    def test_get(self):
+        self.test_set()
         profile = Config('ptpt')
         global_profile = Config()
         self.assertEqual(profile.get('hello', 'world'), 'True')
@@ -155,8 +155,8 @@ world = 13
         self.assertIsNone(global_profile.get('hello', 'nonexists'))
         self.assertIsNone(global_profile.get('nonexists', 'nonexists'))
 
-    def testUnset(self):
-        self.testSet()
+    def test_unset(self):
+        self.test_set()
         profile = Config('ptpt')
         global_profile = Config()
         global_profile.unset('global', 'hello')
@@ -170,19 +170,19 @@ world = 13
             buf = f.read()
             self.assertEqual(buf, '')
 
-    def testClear(self):
+    def test_clear(self):
         profile = Config('ptpt')
         profile.clear()
         self.assertFalse(os.path.isfile(profile.config_path))
         self.assertFalse(os.path.isdir(os.path.dirname(profile.config_path)))
 
-    def testIsGlobal(self):
+    def test_is_global(self):
         profile = Config('ptpt')
         self.assertFalse(profile.is_global)
         self.assertTrue(Config.get_global().is_global)
         self.assertTrue(Config().is_global)
 
-    def testGetAll(self):
+    def test_get_all(self):
         self.assertEqual(Config.get_all(), [])
         profile = Config('ptpt')
         all = Config.get_all()
@@ -197,10 +197,12 @@ class TestInput(unittest.TestCase):
     def setUp(self):
         Config.config_root = 'tmp_ptwit_profile'
 
-    def testChooseName(self):
-        vals = iter(['hello', 'world', '', 'ptpt'])
+    def test_choose_name(self):
+        values = iter(['hello', 'world', '', 'ptpt'])
+
         def raw_input(prompt=''):
-            return vals.next()
+            return values.next()
+
         ptwit.raw_input = raw_input
         self.assertEqual('hello', ptwit.choose_config_name('default'))
         self.assertEqual('world', ptwit.choose_config_name('default'))
@@ -208,31 +210,36 @@ class TestInput(unittest.TestCase):
         profile = Config('ptpt')
         self.assertRaises(ptwit.PtwitError, ptwit.choose_config_name, 'default')
 
-    def testGetConsumerAndTokens(self):
+    def test_get_consumer_and_token(self):
         consumer_key = 'consumer_key'
         consumer_secret = 'consumer_secret'
         token_key = 'token_key'
         token_secret = 'token_secret'
-        # vals = iter([consumer_key, consumer_secret, token_key, token_secret])
-        # def raw_input(prompt=''):
-        #     return vals.next()
-        # ptwit.raw_input = raw_input
+
         old_get_consumer = ptwit.input_consumer_pair
         old_get_oauth = ptwit.get_oauth
+
         ptwit.input_consumer_pair = lambda: (consumer_key, consumer_secret)
-        ptwit.get_oauth = lambda ck, cs: (token_key, token_secret)
-        profile = Config('ptpt')
-        self.assertEqual(ptwit.get_consumer_and_token(profile),
+        ptwit.get_oauth = lambda _, __: (token_key, token_secret)
+
+        _, filename = tempfile.mkstemp()
+        config = TwitterConfig(filename)
+
+        self.assertEqual(ptwit.get_consumer_and_token(config, 'Tao'),
                          (consumer_key, consumer_secret, token_key, token_secret))
+
         ptwit.input_consumer_pair = old_get_consumer
         ptwit.get_oauth = old_get_oauth
 
-        profile.set('consumer', 'key', consumer_key+'2')
-        profile.set('consumer', 'secret', consumer_secret+'2')
-        profile.set('token', 'key', token_key+'2')
-        profile.set('token', 'secret', token_secret+'2')
-        self.assertEqual(ptwit.get_consumer_and_token(profile),
-                         (consumer_key+'2', consumer_secret+'2', token_key+'2', token_secret+'2'))
+        config.set('consumer_key', consumer_key)
+        config.set('consumer_secret', consumer_secret)
+        config.set('token_key', token_key, account='Tao')
+        config.set('token_secret', token_secret, account='Tao')
+
+        self.assertEqual(ptwit.get_consumer_and_token(config, 'Tao'),
+                         (consumer_key, consumer_secret, token_key, token_secret))
+
+        os.remove(filename)
 
     def tearDown(self):
         ptwit.raw_input = raw_input
