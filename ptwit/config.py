@@ -16,7 +16,7 @@ class TwitterConfig(object):
         section = account or 'general'
         try:
             return self.config.get(section, option)
-        except ConfigParser.NoSectionError:
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             return default
 
     def set(self, option, value, account=None):
