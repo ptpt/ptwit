@@ -1,12 +1,12 @@
-ptwit: a simple command line twitter client.
+ptwit: A Simple Command-line Twitter Client
 ============================================
 
-ptwit is a simple command-line-based twitter client.
+ptwit is a simple command-line-based Twitter client.
 
 Requirements
 ------------
-* A twitter account.
-* A twitter application registered at https://dev.twitter.com/apps
+* A Twitter account.
+* A Twitter application registered at https://dev.twitter.com/apps
 
 Installation
 ------------
@@ -24,7 +24,7 @@ Login::
 
    ptwit login
 
-This command will open a twitter authentication page asking for your permission,
+This command will open a Twitter authentication page asking for your permission,
 and then presenting a 7-digit pincode if you permit it. Feed ptwit the pincode to finish the login process.
 
 Get friends timeline::
