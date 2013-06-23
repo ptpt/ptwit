@@ -212,7 +212,7 @@ class ConfigCommands(object):
                               access_token_key=token_key,
                               access_token_secret=token_secret)
 
-            account = choose_config_name(api.VerifyCredentials().screen_name)
+            account = choose_config_name(api.VerifyCredentials().screen_name, self.config)
             self.config.set('default_account', account)
 
             if not self.config.get('consumer_key'):
@@ -616,7 +616,7 @@ def get_consumer_and_token(config, account):
     return consumer_key, consumer_secret, token_key, token_secret
 
 
-def choose_config_name(default):
+def choose_config_name(default, config):
     """ Prompt for choosing config name. """
 
     name = default
@@ -629,7 +629,7 @@ def choose_config_name(default):
             sys.exit(0)
         if not name:
             name = default
-        if name in Config.get_all():
+        if name in config.list_accounts():
             raise PtwitError('Config "%s" exists.' % name)
         elif name:
             break
@@ -660,7 +660,7 @@ def main(argv):
         access_token_secret=token_secret)
 
     if not account:
-        account = choose_config_name(api.VerifyCredentials().screen_name)
+        account = choose_config_name(api.VerifyCredentials().screen_name, config)
         config.set('default_account', account)
 
     if not config.get('consumer_key'):
