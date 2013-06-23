@@ -12,13 +12,20 @@ from datetime import datetime
 
 PROFILE_DIR = os.path.expanduser('~/.ptwit')
 
-FORMAT_TWEET = '\t\033[7m %user.name% \033[0m  (@%user.screen_name%)\n\t%text%\n'
+FORMAT_TWEET = \
+'''	\033[7m %user.name% \033[0m  (@%user.screen_name%)
+	%text%
+'''
 
-FORMAT_SEARCH = '\t\033[7m %user.screen_name% \033[0m\n\t%text%\n'
+FORMAT_SEARCH = \
+'''	\033[7m %user.screen_name% \033[0m
+	%text%
+'''
 
 FORMAT_MESSAGE = '[%sender_screen_name%] %text%\n'
 
-FORMAT_USER = '''@%screen_name%
+FORMAT_USER = \
+'''\033[7m @%screen_name% \033[0m
 Name:        %name%
 Location:    %location%
 URL:         %url%
@@ -413,7 +420,7 @@ class TwitterCommands(object):
         print render_template(
             template, tweet,
             time=datetime.strptime(tweet['created_at'],
-                                   '%a, %d %b %Y %H:%M:%S +0000'))
+                                   '%a %b %d %H:%M:%S +0000 %Y'))
 
     def _print_searches(self, tweets):
         for tweet in tweets:
