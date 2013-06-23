@@ -46,10 +46,6 @@ If you want to list a specified number of tweets, use switch `-c`::
 
    ptwit timeline -c 30
 
-Or specified page (20 tweets per page)::
-
-   ptwit tweets -p 2 someone
-
 Post a new tweet::
 
    ptwit post hello world

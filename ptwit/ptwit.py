@@ -449,66 +449,58 @@ class TwitterCommands(object):
     def tweets(self):
         tweets = self.api.GetUserTimeline(
             self.args.user,
-            count=self.args.count,
-            page=self.args.page)
+            count=self.args.count)
         self._print_tweets(tweets)
 
     def default(self):
         self.timeline()
 
     def timeline(self):
-        if self.args.count is None and self.args.page is None:
-            tweets = self.api.GetFriendsTimeline(
-                page=self.args.page,
+        if self.args.count is None:
+            tweets = self.api.GetHomeTimeline(
                 since_id=self.profile.get('since', 'timeline'))
         else:
-            tweets = self.api.GetFriendsTimeline(
-                page=self.args.page,
-                count=self.args.count)
+            tweets = self.api.GetHomeTimeline(count=self.args.count)
         self._print_tweets(tweets)
-        if len(tweets) and self.args.page is None:
+        if len(tweets):
             self.profile.set('since', 'timeline', tweets[0].id)
             self.profile.save()
 
     def mentions(self):
-        if self.args.count is None and self.args.page is None:
+        if self.args.count is None:
             tweets = self.api.GetMentions(
-                since_id=self.profile.get('since', 'mentions'),
-                page=self.args.page)
+                since_id=self.profile.get('since', 'mentions'))
         else:
             tweets = self.api.GetMentions(
                 # todo: twitter.GetMentions doesn't support count parameter
-                # count=self.args.count,
-                page=self.args.page)
+                count=self.args.count,
+            )
         self._print_tweets(tweets)
-        if len(tweets) and self.args.page is None:
+        if len(tweets):
             self.profile.set('since', 'mentions', tweets[0].id)
             self.profile.save()
 
     def replies(self):
-        if self.args.count is None and self.args.page is None:
+        if self.args.count is None:
             tweets = self.api.GetReplies(
-                since_id=self.profile.get('since', 'replies'),
-                page=self.args.page)
+                since_id=self.profile.get('since', 'replies'))
         else:
             tweets = self.api.GetReplies(
                 # count=self.args.count,
-                page=self.args.page)
+            )
         self._print_tweets(tweets)
-        if len(tweets) and self.args.page is None:
+        if len(tweets):
             self.profile.set('since', 'replies', tweets[0].id)
             self.profile.save()
 
     def messages(self):
-        if self.args.count is None and self.args.page is None:
+        if self.args.count is None:
             messages = self.api.GetDirectMessages(
-                since_id=self.profile.get('since', 'messages'),
-                page=self.args.page)
+                since_id=self.profile.get('since', 'messages'))
         else:
-            messages = self.api.GetDirectMessages(
-                page=self.args.page)
+            messages = self.api.GetDirectMessages()
         self._print_messages(messages)
-        if len(messages) and self.args.page is None:
+        if len(messages):
             self.profile.set('since', 'messages', messages[0].id)
             self.profile.save()
 
@@ -541,14 +533,13 @@ class TwitterCommands(object):
         print 'You have unfollowed @%s' % user.screen_name
 
     def faves(self):
-        self._print_tweets(self.api.GetFavorites(user=self.args.user,
-                                                 page=self.args.page))
+        self._print_tweets(self.api.GetFavorites(user=self.args.user))
 
     def search(self):
         term = ' '.join(self.args.term)
         # convert to unicode
         term = term.decode('utf-8')
-        tweets = self.api.GetSearch(term=term) # todo: can't encode unicode; fix it
+        tweets = self.api.GetSearch(term=term)  # todo: can't encode unicode; fix it
         self._print_searches(tweets)
 
     def whois(self):
@@ -608,19 +599,16 @@ def parse_args(argv):
     # tweets
     p = subparsers.add_parser('tweets', help='list tweets')
     p.add_argument('-c', dest='count', type=int)
-    p.add_argument('-p', dest='page', type=int)
     p.add_argument('user', nargs='?', metavar='USER')
     p.set_defaults(type=TwitterCommands, function='tweets')
 
     # timeline
     p = subparsers.add_parser('timeline', help='list friends timeline')
     p.add_argument('-c', dest='count', type=int)
-    p.add_argument('-p', dest='page', type=int)
     p.set_defaults(type=TwitterCommands, function='timeline')
 
     # faves
     p = subparsers.add_parser('faves', help='list favourites')
-    p.add_argument('-p', dest='page', type=int)
     p.add_argument('user', nargs='?', metavar='USER')
     p.set_defaults(type=TwitterCommands, function='faves')
 
@@ -631,13 +619,11 @@ def parse_args(argv):
 
     # mentions
     p = subparsers.add_parser('mentions', help='list mentions')
-    p.add_argument('-p', dest='page', type=int)
     p.add_argument('-c', dest='count', type=int)
     p.set_defaults(type=TwitterCommands, function='mentions')
 
     # messages
     p = subparsers.add_parser('messages', help='list messages')
-    p.add_argument('-p', dest='page', type=int)
     p.add_argument('-c', dest='count', type=int)
     p.set_defaults(type=TwitterCommands, function='messages')
 
@@ -649,7 +635,6 @@ def parse_args(argv):
 
     # replies
     p = subparsers.add_parser('replies', help='list replies')
-    p.add_argument('-p', dest='page', type=int)
     p.add_argument('-c', dest='count', type=int)
     p.set_defaults(type=TwitterCommands, function='replies')
 
@@ -806,7 +791,6 @@ def main(argv):
 
     # handle twitter comamnds
     if args.type == TwitterCommands:
-
         commands = TwitterCommands(api, args, user_profile)
         commands.call(args.function)
         sys.exit(0)
