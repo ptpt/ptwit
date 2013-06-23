@@ -12,7 +12,6 @@ from datetime import datetime
 from config import TwitterConfig
 
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
-CONFIG_DIR = os.path.expanduser('~/.ptwit')
 
 FORMAT_TWEET = '\t\033[7m %user.name% \033[0m  (@%user.screen_name%)\n\t%text%\n'
 
@@ -147,100 +146,6 @@ def input_consumer_pair():
 
     return raw_input('Consumer key: ').strip(), \
         raw_input('Consumer secret: ').strip()
-
-
-class ConfigError(Exception):
-    """ Config error """
-
-    pass
-
-
-class Config(object):
-    config_root = CONFIG_DIR
-    _global = None
-
-    def __init__(self, name=None):
-        self.name = name
-        conf_dir = os.path.join(Config.config_root, name or '')
-        if not os.path.isdir(conf_dir):
-            os.makedirs(conf_dir)
-        self.config_path = os.path.join(
-            conf_dir, 'user.conf' if self.name else 'global.conf')
-        self._config = None
-        self._modified = False
-
-    @property
-    def config(self):
-        """ Return this instance's config object. """
-        if not self._config:
-            self._config = ConfigParser.RawConfigParser()
-            with open(self.config_path,
-                      'r' if os.path.isfile(self.config_path) else 'w+') as fp:
-                self._config.readfp(fp)
-        return self._config
-
-    @property
-    def is_global(self):
-        """ Determine if current instance is global. """
-        return self.name is None
-
-    @classmethod
-    def get_global(cls):
-        """ Get the unique global config instance. """
-        if cls._global is None:
-            cls._global = Config()
-        return cls._global
-
-    def set(self, section, option, value):
-        """ Set the value of specified option. """
-        if value != self.get(section, option):
-            if not self.config.has_section(section):
-                self.config.add_section(section)
-            self.config.set(section, option, value)
-            self._modified = True
-
-    def unset(self, section, option=None):
-        """ Remove the value of specified option. """
-        if option is None:
-            self.config.remove_section(section)
-        else:
-            self.config.remove_option(section, option)
-            if not len(self.config.options(section)):
-                self.config.remove_section(section)
-        self._modified = True
-
-    def get(self, section, option):
-        """ Return the value of specified option. """
-        try:
-            return self.config.get(section, option)
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-            return None
-
-    @classmethod
-    def get_all(cls):
-        """ Return all configurations. """
-        if os.path.isdir(cls.config_root):
-            return [config for config in os.listdir(cls.config_root)
-                    if os.path.isdir(os.path.join(cls.config_root, config))
-                    and not config.startswith('.')]
-        else:
-            return []
-
-    def save(self, force=False):
-        """ Save changed settings. """
-        if force or self._modified:
-            with open(self.config_path, 'wb') as fp:
-                self.config.write(fp)
-            self._modified = False
-
-    def clear(self):
-        """ Delete config folder. """
-        config_folder = os.path.dirname(self.config_path)
-        if os.path.isdir(config_folder):
-            from shutil import rmtree
-            rmtree(config_folder)
-        else:
-            raise ConfigError('Config "%s" doesn\'t exist.' % config_folder)
 
 
 class ConfigCommandsError(Exception):
@@ -732,60 +637,8 @@ def choose_config_name(default):
     return name
 
 
-def profile2config():
-    global_config = Config.get_global()
-    assert isinstance(global_config, Config)
-    accounts = Config.get_all()
-    twitter_config = TwitterConfig(CONFIG_FILE)
-
-    default_account = global_config.get('profile', 'default')
-    if default_account:
-        twitter_config.set('default_account', default_account)
-
-    accounts.append(None)
-    for account in accounts:
-        config = Config(account)
-
-        consumer_key = config.get('consumer', 'key')
-        if consumer_key:
-            twitter_config.set('consumer_key', consumer_key, account=account)
-
-        consumer_secret = config.get('consumer', 'secret')
-        if consumer_secret:
-            twitter_config.set('consumer_secret', consumer_secret, account=account)
-
-        token_key = config.get('token', 'key')
-        if token_key:
-            twitter_config.set('token_key', token_key, account=account)
-
-        token_secret = config.get('token', 'secret')
-        if token_secret:
-            twitter_config.set('token_secret', token_secret, account=account)
-
-        message_format = config.get('format', 'message')
-        if message_format:
-            twitter_config.set('message_format', message_format, account=account)
-
-        user_format = config.get('format', 'user')
-        if user_format:
-            twitter_config.set('user_format', user_format, account=account)
-
-        tweet_format = config.get('format', 'tweet')
-        if tweet_format:
-            twitter_config.set('tweet_format', tweet_format, account=account)
-
-        search_format = config.get('format', 'search')
-        if search_format:
-            twitter_config.set('search_format', search_format, account=account)
-
-    twitter_config.save()
-
-
 def main(argv):
     """ Parse arguments and issue commands. """
-
-    if not os.path.isfile(CONFIG_FILE):
-        profile2config()
 
     args = parse_args(argv)
 
@@ -836,7 +689,7 @@ def main(argv):
 def cmd():
     try:
         main(sys.argv[1:])
-    except (twitter.TwitterError, PtwitError, ConfigError, ConfigCommandsError) as err:
+    except (twitter.TwitterError, PtwitError, ConfigCommandsError) as err:
         print >> sys.stderr, 'Error: %s' % err.message
         sys.exit(1)
     sys.exit(0)
