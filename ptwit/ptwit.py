@@ -224,7 +224,7 @@ class ConfigCommands(object):
             self.config.unset(option, account=account)
         self.config.save()
 
-    def all(self):
+    def accounts(self):
         """ List all accounts. """
         for config in self.config.list_accounts():
             print config
@@ -593,9 +593,9 @@ def parse_args(argv):
     p.add_argument('options', metavar='OPTION', nargs='+')
     p.set_defaults(type=ConfigCommands, function='unset')
 
-    # config list all
-    p = pp.add_parser('all', help='list all accounts')
-    p.set_defaults(type=ConfigCommands, function='all')
+    # config list all accounts
+    p = pp.add_parser('accounts', help='list all accounts')
+    p.set_defaults(type=ConfigCommands, function='accounts')
 
     # config remove accounts
     p = pp.add_parser('remove', help='remove accounts')
