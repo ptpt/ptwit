@@ -9,7 +9,7 @@ import ConfigParser
 from HTMLParser import HTMLParser
 from datetime import datetime
 
-from config import TwitterConfig
+from config import PtwitConfig
 
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
@@ -642,7 +642,7 @@ def main(argv):
 
     args = parse_args(argv)
 
-    config = TwitterConfig(CONFIG_FILE)
+    config = PtwitConfig(CONFIG_FILE)
     account = args.specified_account or config.get('default_account')
 
     if args.type == ConfigCommands:

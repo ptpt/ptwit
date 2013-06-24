@@ -2,7 +2,7 @@ import os
 import ConfigParser
 
 
-class TwitterConfig(object):
+class PtwitConfig(object):
     def __init__(self, filename):
         self.filename = filename
         self.config = ConfigParser.RawConfigParser()
