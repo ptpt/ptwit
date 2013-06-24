@@ -434,7 +434,7 @@ class TwitterCommands(object):
             message = sys.stdin.read()
         # convert to unicode
         message = message.decode('utf-8')
-        self._print_message(self.api.PostDirectMessage(user, message))
+        self._print_message(self.api.PostDirectMessage(message, screen_name=user))
 
     def followings(self):
         self._print_users(self.api.GetFriends(self.args.user))
@@ -455,7 +455,8 @@ class TwitterCommands(object):
         print 'You have unfollowed @%s' % user.screen_name
 
     def faves(self):
-        self._print_tweets(self.api.GetFavorites(user=self.args.user))
+        tweets = self.api.GetFavorites(screen_name=self.args.user)
+        self._print_tweets(tweets)
 
     def search(self):
         term = ' '.join(self.args.term)
@@ -465,7 +466,7 @@ class TwitterCommands(object):
         self._print_searches(tweets)
 
     def whois(self):
-        users = [self.api.GetUser(user) for user in self.args.users]
+        users = [self.api.GetUser(screen_name=user) for user in self.args.users]
         self._print_users(users)
 
     def call(self, function):
