@@ -9,7 +9,6 @@ import ConfigParser
 from HTMLParser import HTMLParser
 from datetime import datetime
 
-from config import PtwitConfig
 
 MAX_COUNT = 200
 
