@@ -9,8 +9,9 @@ import ConfigParser
 from HTMLParser import HTMLParser
 from datetime import datetime
 
+from config import PtwitConfig
 
-PROFILE_DIR = os.path.expanduser('~/.ptwit')
+CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
 FORMAT_TWEET = \
 '''	\033[7m %user.name% \033[0m  (@%user.screen_name%)
@@ -78,14 +79,14 @@ def render_template(template, data, time=None):
     for i in xrange(len(template)):
         if template[i] == '%':
             if state < 0:
-                # it's open persent sign
+                # open percent sign
                 state = i + 1
             else:
-                # it's close persent sign
+                # close percent sign
                 tag = template[state:i]
                 if tag == '':
-                    # if two persent signs found together,
-                    # replace them with a single persent sign
+                    # if two percent signs found together,
+                    # replace them with a single percent sign
                     text += '%'
                 else:
                     if time and tag in list('aAbBcdHIJmMpSUwWxXyYZ'):
@@ -96,7 +97,7 @@ def render_template(template, data, time=None):
                         value = unicode(lookup(tag, data))
                     # concatenate them and store the result
                     text += '%' + tag + '%' if value is None else value
-                # remember to mark persent sign state as closed
+                # remember to mark percent sign state as closed
                 state = -1
         elif state == -1:
             text = text + template[i]
@@ -154,221 +155,89 @@ def input_consumer_pair():
         raw_input('Consumer secret: ').strip()
 
 
-class ProfileError(Exception):
-    """ Profile error """
-
+class ConfigCommandsError(Exception):
+    """ ConfigCommands error. """
     pass
 
 
-class Profile(object):
-    profile_root = PROFILE_DIR
-    _global = None
-
-    def __init__(self, name=None):
-        self.name = name
-        conf_dir = os.path.join(Profile.profile_root, name or '')
-        if not os.path.isdir(conf_dir):
-            os.makedirs(conf_dir)
-        self.config_path = os.path.join(
-            conf_dir, 'user.conf' if self.name else 'global.conf')
-        self._config = None
-        self._modified = False
-
-    @property
-    def config(self):
-        """ Return this instance's config object. """
-        if not self._config:
-            self._config = ConfigParser.RawConfigParser()
-            with open(self.config_path,
-                      'r' if os.path.isfile(self.config_path) else 'w+') as fp:
-                self._config.readfp(fp)
-        return self._config
-
-    @property
-    def is_global(self):
-        """ Determine if current instance is global. """
-        return self.name is None
-
-    @classmethod
-    def get_global(cls):
-        """ Get the unique global profile instance. """
-        if cls._global is None:
-            cls._global = Profile()
-        return cls._global
-
-    def set(self, section, option, value):
-        """ Set the value of specified option. """
-        if value != self.get(section, option):
-            if not self.config.has_section(section):
-                self.config.add_section(section)
-            self.config.set(section, option, value)
-            self._modified = True
-
-    def unset(self, section, option=None):
-        """ Remove the value of specified option. """
-        if option is None:
-            self.config.remove_section(section)
-        else:
-            self.config.remove_option(section, option)
-            if not len(self.config.options(section)):
-                self.config.remove_section(section)
-        self._modified = True
-
-    def get(self, section, option):
-        """ Return the value of sepcified option. """
-        try:
-            return self.config.get(section, option)
-        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
-            return None
-
-    @classmethod
-    def get_all(cls):
-        """ Return all configurations. """
-        if os.path.isdir(cls.profile_root):
-            return [profile for profile in os.listdir(cls.profile_root)
-                    if os.path.isdir(os.path.join(cls.profile_root, profile))
-                    and not profile.startswith('.')]
-        else:
-            return []
-
-    def save(self, force=False):
-        """ Save changed settings. """
-        if force or self._modified:
-            with open(self.config_path, 'wb') as fp:
-                self.config.write(fp)
-            self._modified = False
-
-    def clear(self):
-        """ Delete config folder. """
-        config_folder = os.path.dirname(self.config_path)
-        if os.path.isdir(config_folder):
-            from shutil import rmtree
-            rmtree(config_folder)
-        else:
-            raise ProfileError('Profile "%s" doesn\'t exist.' % config_folder)
-
-
-class ProfileCommandsError(Exception):
-    """ ProfileCommands error. """
-    pass
-
-
-class ProfileCommands(object):
-    def __init__(self, args, profile):
+class ConfigCommands(object):
+    def __init__(self, args, config, account):
         self.args = args
-        self.profile = profile
+        self.config = config
+        self.account = account
 
     def set(self):
-        """ Command: set SECTION.OPTION VALUE """
-        profile = Profile.get_global() if self.args.g else self.profile
-        try:
-            section, option = self.args.option.split('.', 1)
-        except ValueError:
-            raise ProfileCommandsError(
-                'You must specify a option like this "SECTION.OPTION".')
-        value = self.args.value
-        if self.args.g and section.lower() == 'profile' and \
-                option.lower() == 'default':
-            if value not in Profile.get_all():
-                raise ProfileCommandsError(
-                    'Profile %s doesn\'t exist.' % value)
-        profile.set(section, option, value)
-        profile.save()
+        """ Command: set OPTION VALUE """
+        account = None if self.args.g else self.account
+        self.config.set(self.args.option, self.args.value, account=account)
+        self.config.save()
 
     def unset(self):
-        """ Command: unset SECTION.OPTION [SECTION.OPTION ...] """
-        profile = Profile.get_global() if self.args.g else self.profile
-        pack = [v.split('.', 1) for v in self.args.option]
-        for option in pack:
-            if len(option) == 1:
-                profile.unset(option[0], None)
-            elif len(option) == 2:
-                profile.unset(option[0], option[1])
-        profile.save()
+        """ Command: unset OPTION... """
+        account = None if self.args.g else self.account
+        for option in self.args.options:
+            self.config.unset(option, account=account)
+        self.config.save()
 
     def all(self):
-        """ List all profiles. """
-        for profile in Profile.get_all():
-            print profile
+        """ List all accounts. """
+        for config in self.config.list_accounts():
+            print config
 
     def get(self):
-        """ Command: get SECTION.OPTION """
-        profile = Profile.get_global() if self.args.g else self.profile
-        nonexist = False
-        if self.args.option:
-            pack = [v.split('.', 1) for v in self.args.option]
-            try:
-                for section, option in pack:
-                    value = profile.get(section, option)
-                    if value is None:
-                        print >> sys.stderr, \
-                            '"%s.%s" is not found.' % (section, option)
-                        nonexist = True
-                    else:
-                        print value
-            except ValueError:
-                raise ProfileCommandsError(
-                    'You must specify a option like this "SECTION.OPTION".')
+        """ Command: get OPTION... """
+        account = None if self.args.g else self.account
+        if self.args.options:
+            for option in self.args.options:
+                value = self.config.get(option, account=account)
+                if value:
+                    print value
+                else:
+                    print >> sys.stderr, "Option \"%s\" is not found." % option
         else:
-            profile.config.write(sys.stdout)
-        if nonexist:
-            raise ProfileCommandsError('Some options is not found.')
+            self.config.config.write(sys.stdout)
 
     def remove(self):
-        """ Command: remove PROFILE """
-        nonexist = False
-        for name in self.args.profile:
-            if name in Profile.get_all():
-                profile = Profile(name)
-                profile.clear()
+        """ Command: remove account... """
+        for account in self.args.accounts:
+            if account in self.config.list_accounts():
+                self.config.remove_account(account)
             else:
-                print >> sys.stderr, 'Profile "%s" doesn\'t exist.' % name
-                nonexist = True
-        if nonexist:
-            raise ProfileCommandsError('Some profiles doesn\'t exist.')
+                print >> sys.stderr, 'Account "%s" doesn\'t exist.' % account
+        self.config.save()
 
     def login(self):
-        """ Command: login [PROFILE] """
-        if not self.args.profile_name:
-            global_profile = Profile.get_global()
+        """ Command: login [ACCOUNT] """
 
-            ckey, csecret, tkey, tsecret = \
-                get_consumer_and_token(global_profile)
-            api = twitter.Api(consumer_key=ckey,
-                              consumer_secret=csecret,
-                              access_token_key=tkey,
-                              access_token_secret=tsecret)
-            user_profile_name = \
-                choose_profile_name(api.VerifyCredentials().screen_name)
-            user_profile = Profile(user_profile_name)
-            global_profile.set('profile', 'default', user_profile_name.lower())
+        if not self.args.account:
+            consumer_key, consumer_secret, token_key, token_secret = \
+                get_consumer_and_token(self.config, None)
+            # todo: split get_consumer_and_token into two functions
 
-            # set consumer pairs both in the user profile and global profile
-            if not global_profile.get('consumer', 'key'):
-                global_profile.set('consumer', 'key', ckey)
-            user_profile.set('consumer', 'key', ckey)
-            if not global_profile.get('consumer', 'secret'):
-                global_profile.set('consumer', 'secret', csecret)
-            user_profile.set('consumer', 'secret', csecret)
+            api = twitter.Api(consumer_key=consumer_key,
+                              consumer_secret=consumer_secret,
+                              access_token_key=token_key,
+                              access_token_secret=token_secret)
 
-            # set token pairs
-            user_profile.set('token', 'key', tkey)
-            user_profile.set('token', 'secret', tsecret)
+            account = choose_config_name(api.VerifyCredentials().screen_name, self.config)
+            self.config.set('default_account', account)
 
-            # save profiles
-            user_profile.save()
-            global_profile.save()
+            if not self.config.get('consumer_key'):
+                self.config.set('consumer_key', consumer_key)
+            if self.config.get('consumer_key', account=account):
+                self.config.set('consumer_key', consumer_key, account=account)
 
-        elif self.args.profile_name in Profile.get_all():
-            # login the existing profile
-            self.args.g = True
-            self.args.call = 'set'
-            self.args.option = 'profile.default'
-            self.args.value = self.args.profile_name
-            self.call()
+            if not self.config.get('consumer_secret'):
+                self.config.set('consumer_secret', consumer_secret)
+            if self.config.get('consumer_secret', account=account):
+                self.config.set('consumer_secret', consumer_secret, account=account)
+
+            self.config.set('token_key', token_key, account=account)
+            self.config.set('token_secret', token_secret, account=account)
         else:
-            raise ProfileCommandsError('profile "%s" doesn\'t exist' %
-                                       self.args.profile_name)
+            self.config.set('default_account', self.args.account)
+
+        self.config.save()
 
     def call(self, function=None):
         if function is None:
@@ -380,15 +249,16 @@ class ProfileCommands(object):
 class TwitterCommands(object):
     html_parser = HTMLParser()
 
-    def __init__(self, api, args, profile):
+    def __init__(self, api, args, config, account):
         self.api = api
         self.args = args
-        self.profile = profile
+        self.config = config
+        self.account = account
 
     def _print_user(self, user):
         user = user.AsDict()
         template = self.args.specified_format or \
-            self.profile.get('format', 'user') or \
+            self.config.get('user_format', account=self.account) or \
             FORMAT_USER
         print render_template(template, user).encode('utf-8')
 
@@ -400,7 +270,7 @@ class TwitterCommands(object):
         tweet = tweet.AsDict()
         tweet['text'] = self.html_parser.unescape(tweet['text'])
         template = self.args.specified_format or \
-            self.profile.get('format', 'tweet') or \
+            self.config.get('tweet_format', account=self.account) or \
             FORMAT_TWEET
         created_at = datetime.strptime(
             tweet['created_at'],
@@ -415,7 +285,7 @@ class TwitterCommands(object):
         tweet = tweet.AsDict()
         tweet['text'] = self.html_parser.unescape(tweet['text'])
         template = self.args.specified_format or \
-            self.profile.get('format', 'search') or \
+            self.config.get('search_format', account=self.account) or \
             FORMAT_SEARCH
         print render_template(
             template, tweet,
@@ -429,7 +299,7 @@ class TwitterCommands(object):
     def _print_message(self, message):
         message = message.AsDict()
         template = self.args.specified_format or \
-            self.profile.get('format', 'message') or \
+            self.config.get('message_format', account=self.account) or \
             FORMAT_MESSAGE
         print render_template(
             template, message,
@@ -465,18 +335,18 @@ class TwitterCommands(object):
     def timeline(self):
         if self.args.count is None:
             tweets = self.api.GetHomeTimeline(
-                since_id=self.profile.get('since', 'timeline'))
+                since_id=self.config.get('timeline_since', account=self.account))
         else:
             tweets = self.api.GetHomeTimeline(count=self.args.count)
         self._print_tweets(tweets)
         if len(tweets):
-            self.profile.set('since', 'timeline', tweets[0].id)
-            self.profile.save()
+            self.config.set('timeline_since', tweets[0].id, account=self.account)
+            self.config.save()
 
     def mentions(self):
         if self.args.count is None:
             tweets = self.api.GetMentions(
-                since_id=self.profile.get('since', 'mentions'))
+                since_id=self.config.get('mentions_since', account=self.account))
         else:
             tweets = self.api.GetMentions(
                 # todo: twitter.GetMentions doesn't support count parameter
@@ -484,32 +354,32 @@ class TwitterCommands(object):
             )
         self._print_tweets(tweets)
         if len(tweets):
-            self.profile.set('since', 'mentions', tweets[0].id)
-            self.profile.save()
+            self.config.set('mentions_since', tweets[0].id, account=self.account)
+            self.config.save()
 
     def replies(self):
         if self.args.count is None:
             tweets = self.api.GetReplies(
-                since_id=self.profile.get('since', 'replies'))
+                since_id=self.config.get('replies_since', account=self.account))
         else:
             tweets = self.api.GetReplies(
                 # count=self.args.count,
             )
         self._print_tweets(tweets)
         if len(tweets):
-            self.profile.set('since', 'replies', tweets[0].id)
-            self.profile.save()
+            self.config.set('replies_since', tweets[0].id, account=self.account)
+            self.config.save()
 
     def messages(self):
         if self.args.count is None:
             messages = self.api.GetDirectMessages(
-                since_id=self.profile.get('since', 'messages'))
+                since_id=self.config.get('messages_since', account=self.account))
         else:
             messages = self.api.GetDirectMessages()
         self._print_messages(messages)
         if len(messages):
-            self.profile.set('since', 'messages', messages[0].id)
-            self.profile.save()
+            self.config.set('messages_since', messages[0].id, account=self.account)
+            self.config.save()
 
     def send(self):
         user = self.args.user
@@ -564,20 +434,22 @@ def parse_args(argv):
                                      prog='ptwit')
 
     # global options
-    parser.add_argument('-p', dest='specified_profile', metavar='profile',
-                        action='store', help='specify a profile')
-    parser.add_argument('-f', dest='specified_format', metavar='format',
+    parser.add_argument('-p', dest='specified_account', metavar='ACCOUNT',
+                        action='store', help='specify a account')
+    parser.add_argument('-a', dest='specified_account', metavar='ACCOUNT',
+                        action='store', help='specify a account')
+    parser.add_argument('-f', dest='specified_format', metavar='FORMAT',
                         help='print format')
 
     # todo: default command
 
-    # twitter commands
+    #### twitter commands
     subparsers = parser.add_subparsers(title='twitter commands')
 
     # login
     p = subparsers.add_parser('login', help='login')
-    p.add_argument('profile_name', nargs='?', metavar='PROFILE')
-    p.set_defaults(type=ProfileCommands, function='login')
+    p.add_argument('account', nargs='?', metavar='ACCOUNT')
+    p.set_defaults(type=ConfigCommands, function='login')
 
     # public
     # p = subparsers.add_parser('public', help='list public timeline')
@@ -655,7 +527,7 @@ def parse_args(argv):
     p.add_argument('term', nargs='+', metavar='TERM')
     p.set_defaults(type=TwitterCommands, function='search')
 
-    # profile commands
+    #### profile commands
     profile_parser = subparsers.add_parser('profile', help='manage profiles')
     profile_parser.add_argument('-g',
                                 action='store_true',
@@ -668,46 +540,74 @@ def parse_args(argv):
 
     # profile set
     p = pp.add_parser('set', help='set option')
-    p.add_argument('option', metavar='SECTION.OPTION')
+    p.add_argument('option', metavar='OPTION')
     p.add_argument('value', metavar='VALUE')
-    p.set_defaults(type=ProfileCommands, function='set')
+    p.set_defaults(type=ConfigCommands, function='set')
 
     # profile get
     p = pp.add_parser('get', help='get option')
-    p.add_argument('option', metavar='SECTION.OPTION', nargs='*')
-    p.set_defaults(type=ProfileCommands, function='get')
+    p.add_argument('options', metavar='OPTION', nargs='*')
+    p.set_defaults(type=ConfigCommands, function='get')
 
     # profile unset
-    p = pp.add_parser('unset', help='unset option')
-    p.add_argument('option', metavar='SECTION.OPTION', nargs='+')
-    p.set_defaults(type=ProfileCommands, function='unset')
+    p = pp.add_parser('unset', help='unset options')
+    p.add_argument('options', metavar='OPTION', nargs='+')
+    p.set_defaults(type=ConfigCommands, function='unset')
 
     # profile list all
-    p = pp.add_parser('all', help='list all profiles')
-    p.set_defaults(type=ProfileCommands, function='all')
+    p = pp.add_parser('all', help='list all accounts')
+    p.set_defaults(type=ConfigCommands, function='all')
 
     # profile remove profiles
-    p = pp.add_parser('remove', help='remove profiles')
-    p.add_argument('profile', nargs='+', metavar='PROFILE')
-    p.set_defaults(type=ProfileCommands, function='remove')
+    p = pp.add_parser('remove', help='remove accounts')
+    p.add_argument('accounts', nargs='+', metavar='ACCOUNT')
+    p.set_defaults(type=ConfigCommands, function='remove')
+
+    #### config commands
+    config_parser = subparsers.add_parser('config', help='manage config')
+    config_parser.add_argument('-g', action='store_true', dest='g',
+                               help='apply global configuration only')
+    pp = config_parser.add_subparsers(title='config',
+                                      help='config commands')
+
+    # config set
+    p = pp.add_parser('set', help='set option')
+    p.add_argument('option', metavar='OPTION')
+    p.add_argument('value', metavar='VALUE')
+    p.set_defaults(type=ConfigCommands, function='set')
+
+    # config get
+    p = pp.add_parser('get', help='get options')
+    p.add_argument('options', metavar='OPTION', nargs='*')
+    p.set_defaults(type=ConfigCommands, function='get')
+
+    # config unset
+    p = pp.add_parser('unset', help='unset options')
+    p.add_argument('options', metavar='OPTION', nargs='+')
+    p.set_defaults(type=ConfigCommands, function='unset')
+
+    # config list all
+    p = pp.add_parser('all', help='list all accounts')
+    p.set_defaults(type=ConfigCommands, function='all')
+
+    # config remove accounts
+    p = pp.add_parser('remove', help='remove accounts')
+    p.add_argument('accounts', nargs='+', metavar='ACCOUNT')
+    p.set_defaults(type=ConfigCommands, function='remove')
 
     return parser.parse_args(argv)
 
 
-def get_consumer_and_token(profile):
-    """Get consumer pairs and token pairs from profile or prompt."""
+def get_consumer_and_token(config, account):
+    """Get consumer pairs and token pairs from config or prompt."""
 
-    global_profile = Profile.get_global()
-    consumer_key = profile.get('consumer', 'key')
+    consumer_key = config.get('consumer_key', account=account) \
+        or config.get('consumer_key')
+    consumer_secret = config.get('consumer_secret', account=account) \
+        or config.get('consumer_secret')
 
-    # read consumer pairs from user profile, and then global profile
-    if not consumer_key and not profile.is_global:
-        consumer_key = global_profile.get('consumer', 'key')
-    consumer_secret = profile.get('consumer', 'secret')
-    if not consumer_secret and not profile.is_global:
-        consumer_secret = global_profile.get('consumer', 'secret')
-    token_key = profile.get('token', 'key')
-    token_secret = profile.get('token', 'secret')
+    token_key = config.get('token_key', account=account)
+    token_secret = config.get('token_secret', account=account)
 
     try:
         # if consumer pairs still not found, then let user input
@@ -724,21 +624,24 @@ def get_consumer_and_token(profile):
     return consumer_key, consumer_secret, token_key, token_secret
 
 
-def choose_profile_name(default):
-    """ Prompt for choosing profile name. """
+def choose_config_name(default, config):
+    """ Prompt for choosing config name. """
+
+    name = default
 
     while True:
         try:
             name = raw_input(
-                'Enter a profile name (%s): ' % default).strip()
+                'Enter a config name (%s): ' % default).strip()
         except KeyboardInterrupt:
             sys.exit(0)
         if not name:
             name = default
-        if name in Profile.get_all():
-            raise PtwitError('Profile "%s" exists.' % name)
+        if name in config.list_accounts():
+            raise PtwitError('Config "%s" exists.' % name)
         elif name:
             break
+
     return name
 
 
@@ -747,58 +650,46 @@ def main(argv):
 
     args = parse_args(argv)
 
-    global_profile = Profile.get_global()
+    config = PtwitConfig(CONFIG_FILE)
+    account = args.specified_account or config.get('default_account')
 
-    # get default user from global profile's default section
-    user_profile_name = args.specified_profile or \
-        global_profile.get('profile', 'default')
-    user_profile = Profile(user_profile_name) if user_profile_name else None
-
-    # if it is profile subcommands, them handle profile commands and quit
-    if args.type == ProfileCommands:
-        commands = ProfileCommands(args, user_profile or global_profile)
+    if args.type == ConfigCommands:
+        commands = ConfigCommands(args, config, account)
         commands.call(args.function)
         sys.exit(0)
 
-    # try to get customer pairs and token pairs from profiles or prompt
-    ckey, csecret, tkey, tsecret = \
-        get_consumer_and_token(user_profile or global_profile)
+    consumer_key, consumer_secret, token_key, token_secret = \
+        get_consumer_and_token(config, account)
+
     api = twitter.Api(
-        consumer_key=ckey,
-        consumer_secret=csecret,
-        access_token_key=tkey,
-        access_token_secret=tsecret)
+        consumer_key=consumer_key,
+        consumer_secret=consumer_secret,
+        access_token_key=token_key,
+        access_token_secret=token_secret)
 
-    # if user profile not found, create it
-    if not user_profile:
-        user_profile_name = choose_profile_name(
-            api.VerifyCredentials().screen_name)
-        user_profile = Profile(user_profile_name)
+    if not account:
+        account = choose_config_name(api.VerifyCredentials().screen_name, config)
+        config.set('default_account', account)
 
-    # if global profile's default section is empty, oh, you will be
-    # the default user
-    if not global_profile.get('profile', 'default'):
-        global_profile.set('profile', 'default', user_profile_name)
+    if not config.get('consumer_key'):
+        config.set('consumer_key', consumer_key)
+    if config.get('consumer_key', account=account):
+        # update consumer key
+        config.set('consumer_key', consumer_key, account=account)
 
-    # set consumer pairs both in the user profile and global profile
-    if not global_profile.get('consumer', 'key'):
-        global_profile.set('consumer', 'key', ckey)
-    user_profile.set('consumer', 'key', ckey)
-    if not global_profile.get('consumer', 'secret'):
-        global_profile.set('consumer', 'secret', csecret)
-    user_profile.set('consumer', 'secret', csecret)
+    if not config.get('consumer_secret'):
+        config.set('consumer_secret', consumer_secret)
+    if config.get('consumer_secret', account=account):
+        # update consumer secret
+        config.set('consumer_secret', consumer_secret, account=account)
 
-    # set token pairs in the user profile
-    user_profile.set('token', 'key', tkey)
-    user_profile.set('token', 'secret', tsecret)
+    config.set('token_key', token_key, account=account)
+    config.set('token_secret', token_secret, account=account)
 
-    # save both profile
-    user_profile.save()
-    global_profile.save()
+    config.save()
 
-    # handle twitter comamnds
     if args.type == TwitterCommands:
-        commands = TwitterCommands(api, args, user_profile)
+        commands = TwitterCommands(api, args, config, account)
         commands.call(args.function)
         sys.exit(0)
 
@@ -806,8 +697,7 @@ def main(argv):
 def cmd():
     try:
         main(sys.argv[1:])
-    except (twitter.TwitterError, PtwitError,
-            ProfileError, ProfileCommandsError) as err:
+    except (twitter.TwitterError, PtwitError, ConfigCommandsError) as err:
         print >> sys.stderr, 'Error: %s' % err.message
         sys.exit(1)
     sys.exit(0)
