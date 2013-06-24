@@ -436,7 +436,7 @@ class TwitterCommands(object):
         message = message.decode('utf-8')
         self._print_message(self.api.PostDirectMessage(user, message))
 
-    def following(self):
+    def followings(self):
         self._print_users(self.api.GetFriends(self.args.user))
 
     def followers(self):
@@ -499,9 +499,9 @@ def parse_args(argv):
     # p.set_defaults(type=TwitterCommands, function='public')
 
     # followings
-    p = subparsers.add_parser('following', help='list following')
+    p = subparsers.add_parser('followings', help='list followings')
     p.add_argument('user', nargs='?', metavar='USER')
-    p.set_defaults(type=TwitterCommands, function='following')
+    p.set_defaults(type=TwitterCommands, function='followings')
 
     # followers
     p = subparsers.add_parser('followers', help='list followers')
