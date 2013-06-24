@@ -11,6 +11,8 @@ from datetime import datetime
 
 from config import PtwitConfig
 
+MAX_COUNT = 200
+
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
 FORMAT_TWEET = \
@@ -380,6 +382,7 @@ class TwitterCommands(object):
     def timeline(self):
         if self.args.count is None:
             tweets = self.api.GetHomeTimeline(
+                count=MAX_COUNT,
                 since_id=self.config.get('timeline_since', account=self.account))
         else:
             tweets = self.api.GetHomeTimeline(count=self.args.count)
@@ -391,12 +394,10 @@ class TwitterCommands(object):
     def mentions(self):
         if self.args.count is None:
             tweets = self.api.GetMentions(
+                count=MAX_COUNT,
                 since_id=self.config.get('mentions_since', account=self.account))
         else:
-            tweets = self.api.GetMentions(
-                # todo: twitter.GetMentions doesn't support count parameter
-                count=self.args.count,
-            )
+            tweets = self.api.GetMentions(count=self.args.count)
         self._print_tweets(tweets)
         if len(tweets):
             self.config.set('mentions_since', tweets[0].id, account=self.account)
@@ -405,11 +406,10 @@ class TwitterCommands(object):
     def replies(self):
         if self.args.count is None:
             tweets = self.api.GetReplies(
+                count=MAX_COUNT,
                 since_id=self.config.get('replies_since', account=self.account))
         else:
-            tweets = self.api.GetReplies(
-                # count=self.args.count,
-            )
+            tweets = self.api.GetReplies(count=self.args.count)
         self._print_tweets(tweets)
         if len(tweets):
             self.config.set('replies_since', tweets[0].id, account=self.account)
@@ -418,9 +418,10 @@ class TwitterCommands(object):
     def messages(self):
         if self.args.count is None:
             messages = self.api.GetDirectMessages(
+                count=MAX_COUNT,
                 since_id=self.config.get('messages_since', account=self.account))
         else:
-            messages = self.api.GetDirectMessages()
+            messages = self.api.GetDirectMessages(count=self.args.count)
         self._print_messages(messages)
         if len(messages):
             self.config.set('messages_since', messages[0].id, account=self.account)
@@ -473,7 +474,7 @@ class TwitterCommands(object):
 
 
 def parse_args(argv):
-    """Parse command arguments."""
+    """ Parse command arguments. """
 
     parser = argparse.ArgumentParser(description='Twitter command-line.',
                                      prog='ptwit')
