@@ -303,7 +303,7 @@ class TwitterCommands(object):
 
     def _print_user(self, user):
         user = user.AsDict()
-        template = self.args.specified_format or \
+        template = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
         print render_template(template, user).encode('utf-8')
@@ -315,7 +315,7 @@ class TwitterCommands(object):
     def _print_tweet(self, tweet):
         tweet = tweet.AsDict()
         tweet['text'] = self.html_parser.unescape(tweet['text'])
-        template = self.args.specified_format or \
+        template = self.args.format or \
             self.config.get('tweet_format', account=self.account) or \
             FORMAT_TWEET
         created_at = datetime.strptime(
@@ -330,7 +330,7 @@ class TwitterCommands(object):
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
         tweet['text'] = self.html_parser.unescape(tweet['text'])
-        template = self.args.specified_format or \
+        template = self.args.format or \
             self.config.get('search_format', account=self.account) or \
             FORMAT_SEARCH
         print render_template(
@@ -344,7 +344,7 @@ class TwitterCommands(object):
 
     def _print_message(self, message):
         message = message.AsDict()
-        template = self.args.specified_format or \
+        template = self.args.format or \
             self.config.get('message_format', account=self.account) or \
             FORMAT_MESSAGE
         print render_template(
@@ -482,7 +482,7 @@ def parse_args(argv):
     # global options
     parser.add_argument('-a', dest='specified_account', metavar='ACCOUNT',
                         action='store', help='specify a account')
-    parser.add_argument('-f', dest='specified_format', metavar='FORMAT',
+    parser.add_argument('-f', dest='format', metavar='FORMAT',
                         help='print format')
 
     # todo: default command
