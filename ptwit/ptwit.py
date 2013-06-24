@@ -434,8 +434,6 @@ def parse_args(argv):
                                      prog='ptwit')
 
     # global options
-    parser.add_argument('-p', dest='specified_account', metavar='ACCOUNT',
-                        action='store', help='specify a account')
     parser.add_argument('-a', dest='specified_account', metavar='ACCOUNT',
                         action='store', help='specify a account')
     parser.add_argument('-f', dest='specified_format', metavar='FORMAT',
@@ -526,42 +524,6 @@ def parse_args(argv):
     p = subparsers.add_parser('search', help='search twitter')
     p.add_argument('term', nargs='+', metavar='TERM')
     p.set_defaults(type=TwitterCommands, function='search')
-
-    #### profile commands
-    profile_parser = subparsers.add_parser('profile', help='manage profiles')
-    profile_parser.add_argument('-g',
-                                action='store_true',
-                                dest='g',
-                                help='apply global configuration only')
-    pp = profile_parser.add_subparsers(title='profile',
-                                       help='profile commands')
-
-    # todo default profile command
-
-    # profile set
-    p = pp.add_parser('set', help='set option')
-    p.add_argument('option', metavar='OPTION')
-    p.add_argument('value', metavar='VALUE')
-    p.set_defaults(type=ConfigCommands, function='set')
-
-    # profile get
-    p = pp.add_parser('get', help='get option')
-    p.add_argument('options', metavar='OPTION', nargs='*')
-    p.set_defaults(type=ConfigCommands, function='get')
-
-    # profile unset
-    p = pp.add_parser('unset', help='unset options')
-    p.add_argument('options', metavar='OPTION', nargs='+')
-    p.set_defaults(type=ConfigCommands, function='unset')
-
-    # profile list all
-    p = pp.add_parser('all', help='list all accounts')
-    p.set_defaults(type=ConfigCommands, function='all')
-
-    # profile remove profiles
-    p = pp.add_parser('remove', help='remove accounts')
-    p.add_argument('accounts', nargs='+', metavar='ACCOUNT')
-    p.set_defaults(type=ConfigCommands, function='remove')
 
     #### config commands
     config_parser = subparsers.add_parser('config', help='manage config')
