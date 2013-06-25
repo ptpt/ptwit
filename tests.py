@@ -5,8 +5,7 @@ from shutil import rmtree
 from datetime import datetime
 
 from ptwit import ptwit
-from ptwit.ptwit import lookup, render_template
-from ptwit.config import PtwitConfig
+from ptwit.ptwit import PtwitConfig
 
 
 class TestPtwitConfig(unittest.TestCase):
@@ -74,36 +73,6 @@ class TestPtwitConfig(unittest.TestCase):
         self.assertTrue(content.find('general'))
         self.assertTrue(content.find('Tao'))
         self.assertTrue(content.find('name'))
-
-
-class TestTemplate(unittest.TestCase):
-    def test_lookup(self):
-        profile = {
-            'user': {'name': 'pt', 'age': 24},
-            'status': 'hello world',
-            'web.site': 'google.com'}
-        self.assertEqual(lookup('user.name', profile), 'pt')
-        self.assertEqual(lookup('user.age', profile), 24)
-        self.assertEqual(lookup('status', profile), 'hello world')
-        self.assertIsNone(lookup('test', profile))
-        self.assertIsNone(lookup('user.test', profile))
-        self.assertEqual(lookup('user', profile), {'name': 'pt', 'age': 24})
-        self.assertIsNone(lookup('.name', profile))
-        self.assertIsNone(lookup('status.name', profile))
-        self.assertEqual(lookup('web.site', profile), 'google.com')
-
-    def test_render_template(self):
-        profile = {'user': {'name': 'pt',
-                            'age': 12},
-                   'status': 'good',
-                   'web.site': 'taopeng.me',
-                   'y': 'not year'}
-        self.assertEqual(render_template('%user%', profile), "{'age': 12, 'name': 'pt'}")
-        self.assertEqual(render_template('%user.name% is good', profile), 'pt is good')
-        self.assertEqual(render_template('%y%', profile), 'not year')
-        self.assertEqual(render_template('%%', profile), '%')
-        now = datetime.utcnow()
-        self.assertEqual(render_template('%y%', profile, now), now.strftime('%y'))
 
 
 class TestInput(unittest.TestCase):
