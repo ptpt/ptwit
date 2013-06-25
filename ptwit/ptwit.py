@@ -15,26 +15,32 @@ MAX_COUNT = 200
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
 FORMAT_TWEET = \
-'''	\033[7m %user.name% \033[0m  (@%user.screen_name%)
-	%text%
+'''	\033[7m {user[name]} \033[0m (@{user[screen_name]})
+	{text}
+	\033[35m{from_now}\033[0m
 '''
 
 FORMAT_SEARCH = \
-'''	\033[7m %user.screen_name% \033[0m
-	%text%
+'''	\033[7m {user[screen_name]} \033[0m
+	{text}
+	\033[35m{from_now}\033[0m
 '''
 
-FORMAT_MESSAGE = '[%sender_screen_name%] %text%\n'
+FORMAT_MESSAGE = \
+'''	\033[7m {sender_screen_name} \033[0m
+	{text}
+	\033[35m{from_now}\033[0m
+'''
 
 FORMAT_USER = \
-'''\033[7m @%screen_name% \033[0m
-Name:        %name%
-Location:    %location%
-URL:         %url%
-Followers:   %followers_count%
-Following:   %friends_count%
-Status:      %statuses_count%
-Description: %description%
+'''\033[7m {name} \033[0m (@{screen_name})
+Location:    {location}
+URL:         {url}
+Followers:   {followers_count}
+Following:   {friends_count}
+Status:      {statuses_count}
+Description: {description}
+Created at:  {from_now} ({0:%Y-%m-%d})
 '''
 
 
@@ -42,69 +48,6 @@ class PtwitError(Exception):
     """ Application error. """
 
     pass
-
-
-def lookup(key, dictionary):
-    """
-    Lookup a flatten key in a dictionary recursively.
-    The key is a series of keys concatenated by dot.
-
-    for example:
-    lookup('user.name', dictionary) does the same thing as dictionary['user']['name'] does.
-    """
-    if key in dictionary:
-        if isinstance(dictionary[key], basestring):
-            return unicode(dictionary[key])
-        else:
-            return dictionary[key]
-    else:
-        subkeys = key.split('.', 1)
-        if len(subkeys) is not 2:
-            return None
-        if subkeys[0] in dictionary and \
-                isinstance(dictionary[subkeys[0]], dict):
-            return lookup(subkeys[1], dictionary[subkeys[0]])
-        else:
-            return None
-
-
-def render_template(template, data, time=None):
-    """
-    Render template using a dictionary data.
-
-    All strings between a pair of percent sign will be replaced by the
-    value found in the data dictionary.
-    """
-    state = -1
-    text = ''
-    for i in xrange(len(template)):
-        if template[i] == '%':
-            if state < 0:
-                # open percent sign
-                state = i + 1
-            else:
-                # close percent sign
-                tag = template[state:i]
-                if tag == '':
-                    # if two percent signs found together,
-                    # replace them with a single percent sign
-                    text += '%'
-                else:
-                    if time and tag in list('aAbBcdHIJmMpSUwWxXyYZ'):
-                        # time variables
-                        value = time.strftime('%' + tag)
-                    else:
-                        # data variables
-                        value = unicode(lookup(tag, data))
-                    # concatenate them and store the result
-                    text += '%' + tag + '%' if value is None else value
-                # remember to mark percent sign state as closed
-                state = -1
-        elif state == -1:
-            text = text + template[i]
-    if state >= 0:
-        text = text + '%' + template[state:]
-    return text
 
 
 def get_oauth(consumer_key, consumer_secret):
@@ -154,6 +97,29 @@ def input_consumer_pair():
 
     return raw_input('Consumer key: ').strip(), \
         raw_input('Consumer secret: ').strip()
+
+
+def from_now(time):
+    diff = datetime.utcnow() - time
+    assert diff.total_seconds() >= 0
+    assert diff.days >= 0
+
+    if diff.days == 1:
+        return '1 day ago'
+    elif diff.days > 1:
+        return '%d days ago' % diff.days
+
+    elif diff.seconds < 60:
+        return 'just now'
+    elif diff.seconds // 60 == 1:
+        return '1 minute ago'
+    elif diff.seconds < 3600:
+        return '%d minutes ago' % (diff.seconds // 60)
+
+    elif diff.seconds // 3600 == 1:
+        return '1 hour ago'
+    else:
+        return '%d hours ago' % (diff.seconds // 3600)
 
 
 class PtwitConfig(object):
@@ -303,10 +269,16 @@ class TwitterCommands(object):
 
     def _print_user(self, user):
         user = user.AsDict()
-        template = self.args.format or \
+        user.setdefault('description', None)
+        created_at = datetime.strptime(
+            user['created_at'],
+            '%a %b %d %H:%M:%S +0000 %Y')
+        format_string = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
-        print render_template(template, user).encode('utf-8')
+        print unicode(format_string).format(created_at,
+                                            from_now = from_now(created_at),
+                                            **user)
 
     def _print_users(self, users):
         for user in users:
@@ -315,13 +287,15 @@ class TwitterCommands(object):
     def _print_tweet(self, tweet):
         tweet = tweet.AsDict()
         tweet['text'] = self.html_parser.unescape(tweet['text'])
-        template = self.args.format or \
+        format_string = self.args.format or \
             self.config.get('tweet_format', account=self.account) or \
             FORMAT_TWEET
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print render_template(template, tweet, time=created_at).encode('utf-8')
+        print unicode(format_string).format(created_at,
+                                            from_now=from_now(created_at),
+                                            **tweet)
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -330,13 +304,16 @@ class TwitterCommands(object):
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
         tweet['text'] = self.html_parser.unescape(tweet['text'])
-        template = self.args.format or \
+        format_string = self.args.format or \
             self.config.get('search_format', account=self.account) or \
             FORMAT_SEARCH
-        print render_template(
-            template, tweet,
-            time=datetime.strptime(tweet['created_at'],
-                                   '%a %b %d %H:%M:%S +0000 %Y'))
+        created_at = datetime.strptime(
+            tweet['created_at'],
+            '%a %b %d %H:%M:%S +0000 %Y')
+        # todo: time
+        print unicode(format_string).format(created_at,
+                                            from_now=from_now(created_at),
+                                            **tweet)
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -344,21 +321,20 @@ class TwitterCommands(object):
 
     def _print_message(self, message):
         message = message.AsDict()
-        template = self.args.format or \
+        format_string = self.args.format or \
             self.config.get('message_format', account=self.account) or \
             FORMAT_MESSAGE
-        print render_template(
-            template, message,
-            time=datetime.strptime(
-                message['created_at'],
-                '%a %b %d %H:%M:%S +0000 %Y')).encode('utf-8')
+        created_at = datetime.strptime(
+            message['created_at'],
+            '%a %b %d %H:%M:%S +0000 %Y')
+        # todo: time
+        print unicode(format_string).format(created_at,
+                                            from_now=from_now(created_at),
+                                            **message)
 
     def _print_messages(self, messages):
         for message in messages:
             self._print_message(message)
-
-    # def public(self):
-    #     self._print_tweets(self.api.GetPublicTimeline())
 
     def post(self):
         if len(self.args.post):
@@ -370,6 +346,7 @@ class TwitterCommands(object):
         self._print_tweet(self.api.PostUpdate(post))
 
     def tweets(self):
+        # todo: since_id here
         tweets = self.api.GetUserTimeline(
             self.args.user,
             count=self.args.count)
