@@ -3,11 +3,12 @@
 import sys
 import os
 import time
-import twitter
 import argparse
 import ConfigParser
 from HTMLParser import HTMLParser
 from datetime import datetime
+
+import twitter
 
 
 MAX_COUNT = 200
@@ -348,7 +349,7 @@ class TwitterCommands(object):
     def tweets(self):
         # todo: since_id here
         tweets = self.api.GetUserTimeline(
-            self.args.user,
+            screen_name=self.args.user,
             count=self.args.count)
         self._print_tweets(tweets)
 
