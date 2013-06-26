@@ -78,7 +78,7 @@ Get tweets of a Twitter user
 .. code-block:: bash
 
     $ ptwit tweets              # list your tweets
-    $ ptwit tweets USER      # list someone's tweets
+    $ ptwit tweets USER         # list someone's tweets
 
 Get mentions or replies
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,3 +146,9 @@ Search tweets
 .. code-block:: bash
 
     $ ptwit search TERM
+
+
+LICENSE
+-------
+
+``ptwit`` is under the MIT License. See LICENSE file for full license text.
