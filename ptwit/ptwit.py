@@ -274,6 +274,7 @@ class TwitterCommands(object):
     def _print_user(self, user):
         user = user.AsDict()
         user.setdefault('description', None)
+        user.setdefault('url', None)
         created_at = datetime.strptime(
             user['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
@@ -680,6 +681,7 @@ def main(argv):
     assert args.type == TwitterCommands
     commands = TwitterCommands(api, args, config, account)
     commands.call(args.function)
+
     return 0
 
 
