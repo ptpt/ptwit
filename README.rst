@@ -1,4 +1,4 @@
-ptwit: A Simple Command-line Twitter Client
+``ptwit``: A Command-line Twitter Client
 ============================================
 
 
@@ -25,8 +25,8 @@ To install ``ptwit``, simply:
 Authorization
 -------------
 
-For the first time you run ``ptwit`` command, you will be asked for your
-Twitter application information, which you can find at
+For the first time you run ``ptwit`` command, you will be asked for
+your Twitter application information, which you can find at
 `https://dev.twitter.com/apps`. If you don't have one, register at
 `https://dev.twitter.com/apps/new`.
 
@@ -38,16 +38,17 @@ commands below:
     $ ptwit config -g set consumer_key "CONSUMER KEY HERE"
     $ ptwit config -g set consumer_secret "CONSUMER SECRET HERE"
 
-``ptwit`` support multiple Twitter accounts. If you want to log into
-another account, use login command below:
+``ptwit`` supports multiple Twitter accounts. You can always use the
+``login`` command to log into a new account:
 
 .. code-block:: bash
 
     $ ptwit login
 
 The command above will take you to the Twitter authorization page, and
-ask you to give a name for this account. You can easily switch between
-accounts you've already authorized:
+ask you to give a name for this account.
+
+You can easily switch between accounts you've already authorized:
 
 .. code-block:: bash
 
