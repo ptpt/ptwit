@@ -1,57 +1,147 @@
 ptwit: A Simple Command-line Twitter Client
 ============================================
 
-ptwit is a simple command-line-based Twitter client.
+
+``ptwit`` is a simple command-line-based Twitter client.
+
 
 Requirements
 ------------
-* A Twitter account.
+
+* A Twitter account
 * A Twitter application registered at https://dev.twitter.com/apps
+
 
 Installation
 ------------
-To install ptwit, simply::
 
-    pip install ptwit
+To install ``ptwit``, simply:
 
-The first time you issue a ptwit command will prompt to input a consumer key and a consumer secret,
-both of which can be obtained from your registered application at https://dev.twitter.com/apps
+.. code-block:: bash
 
-Usage
------
+    $ pip install ptwit
 
-Login::
 
-   ptwit login
+Authorization
+-------------
 
-This command will open a Twitter authentication page asking for your permission,
-and then presenting a 7-digit pincode if you permit it. Feed ptwit the pincode to finish the login process.
+For the first time you run ``ptwit`` command, you will be asked for your
+Twitter application information, which you can find at
+`https://dev.twitter.com/apps`. If you don't have one, register at
+`https://dev.twitter.com/apps/new`.
 
-Get friends timeline::
+You can also manually set your Twitter application information via the
+commands below:
 
-   ptwit timeline
+.. code-block:: bash
 
-Get someone's tweets::
+    $ ptwit config -g set consumer_key "CONSUMER KEY HERE"
+    $ ptwit config -g set consumer_secret "CONSUMER SECRET HERE"
 
-   ptwit tweets someone
-   
-Get mentions or replies::
+``ptwit`` support multiple Twitter accounts. If you want to log into
+another account, use login command below:
 
-   ptwit mentions
-   ptwit replies
+.. code-block:: bash
 
-Commands above always list the latest 20 new tweets, which means the tweets you've fetched will not be listed again.
+    $ ptwit login
 
-If you want to list a specified number of tweets, use switch `-c`::
+The command above will take you to the Twitter authorization page, and
+ask you to give a name for this account. You can easily switch between
+accounts you've already authorized:
 
-   ptwit timeline -c 30
+.. code-block:: bash
 
-Post a new tweet::
+    $ ptwit login ACCOUNT
 
-   ptwit post hello world
-   ptwit post < tweet.txt
+To remove an account from your computer, use this command:
 
-Send message to someone::
+.. code-block:: bash
 
-   ptwit send someone hello, ptwit is awesome
-   cat message.txt | ptwit send someone
+    $ ptwit config remove ACCOUNT
+
+
+Twitter Commands
+----------------
+
+Get home timeline
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit timeline            # latest tweets
+    $ ptwit timeline -c 20      # latest 20 tweets
+
+Get tweets of a Twitter user
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit tweets              # list your tweets
+    $ ptwit tweets USER      # list someone's tweets
+
+Get mentions or replies
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit mentions
+    $ ptwit replies
+
+Post a new tweet
+~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit post "YOUR STATUS"
+    $ ptwit post < tweet.txt
+
+Send direct message
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit send USER "YOUR MESSAGE"
+    $ cat message.txt | ptwit send USER
+
+List followings
+~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit followings
+
+List followers
+~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit followers
+
+Follow or unfollow Twitter users
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit follow USER
+    $ ptwit unfollow USER
+
+List your favorite tweets
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit faves
+
+Get a Twitter user's information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit whois USER
+
+Search tweets
+~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    $ ptwit search TERM
