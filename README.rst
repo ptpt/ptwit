@@ -1,8 +1,15 @@
 ``ptwit``: A Command-line Twitter Client
 ============================================
 
+Introduction
+------------
 
 ``ptwit`` is a simple command-line-based Twitter client.
+
+Screenshots
+~~~~~~~~~~~
+
+.. image:: http://farm8.staticflickr.com/7326/9144252605_8e73c1d206_z.jpg
 
 
 Requirements
