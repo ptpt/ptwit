@@ -176,11 +176,6 @@ class PtwitConfig(object):
             self.config.write(fp)
 
 
-class ConfigCommandsError(Exception):
-    """ ConfigCommands error. """
-    pass
-
-
 class ConfigCommands(object):
     def __init__(self, args, config, account):
         self.args = args
@@ -613,7 +608,7 @@ def get_consumer_and_token(config, account):
         if not (token_key and token_secret):
             token_key, token_secret = get_oauth(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
-        sys.exit(0)
+        sys.exit(10)
 
     return consumer_key, consumer_secret, token_key, token_secret
 
@@ -628,7 +623,7 @@ def choose_config_name(default, config):
             name = raw_input(
                 'Enter a config name (%s): ' % default).strip()
         except KeyboardInterrupt:
-            sys.exit(0)
+            sys.exit(10)
         if not name:
             name = default
         if name in config.list_accounts():
@@ -650,7 +645,7 @@ def main(argv):
     if args.type == ConfigCommands:
         commands = ConfigCommands(args, config, account)
         commands.call(args.function)
-        sys.exit(0)
+        return 0
 
     consumer_key, consumer_secret, token_key, token_secret = \
         get_consumer_and_token(config, account)
@@ -682,18 +677,23 @@ def main(argv):
 
     config.save()
 
-    if args.type == TwitterCommands:
-        commands = TwitterCommands(api, args, config, account)
-        commands.call(args.function)
-        sys.exit(0)
+    assert args.type == TwitterCommands
+    commands = TwitterCommands(api, args, config, account)
+    commands.call(args.function)
+    return 0
 
 
 def cmd():
     try:
-        main(sys.argv[1:])
-    except (twitter.TwitterError, PtwitError, ConfigCommandsError) as err:
-        print >> sys.stderr, 'Error: %s' % err.message
+        sys.exit(main(sys.argv[1:]))
+    except twitter.TwitterError as err:
+        for e in err.message:
+            print >> sys.stderr, 'Twitter Error (code %d): %s' % (e['code'], e['message'])
         sys.exit(1)
+    except PtwitError as err:
+        print >> sys.stderr, 'Error: %s' % err.message
+        sys.exit(2)
+
     sys.exit(0)
 
 
