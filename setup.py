@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 try:
     from setuptools import setup
@@ -14,7 +15,7 @@ def readme():
 
 
 setup(name='ptwit',
-      version='0.0.5',
+      version='0.0.6',
       description='A simple twitter command line client',
       long_description=readme(),
       classifiers=[

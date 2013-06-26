@@ -1,3 +1,5 @@
+.PHONY: setup pip remove upload clean
+
 setup:
 	sudo python setup.py install
 

@@ -311,7 +311,6 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        # todo: time
         print unicode(format_string).format(created_at,
                                             from_now=from_now(created_at),
                                             **tweet)
@@ -328,7 +327,6 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             message['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        # todo: time
         print unicode(format_string).format(created_at,
                                             from_now=from_now(created_at),
                                             **message)
@@ -415,9 +413,11 @@ class TwitterCommands(object):
         self._print_message(self.api.PostDirectMessage(message, screen_name=user))
 
     def followings(self):
+        # todo: list followings who is following you, too
         self._print_users(self.api.GetFriends(self.args.user))
 
     def followers(self):
+        # todo: list followers who you follows, too
         if self.args.user:
             user = self.api.GetUser(self.args.user)
             self._print_users(self.api.GetFollowers(user=user))
