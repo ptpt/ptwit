@@ -1,17 +1,18 @@
 .PHONY: setup pip remove upload clean
 
 setup:
-	sudo python setup.py install
+	python setup.py install
 
 pip:
-	sudo pip install ptwit
+	pip install ptwit
 
 remove:
-	sudo pip uninstall ptwit
+	pip uninstall ptwit
 
 upload:
 	python setup.py sdist upload
 
 clean:
+	sudo rm -r build/ dist/ ptwit.egg-info/
 	find . -name "*.pyc" -delete
 	rm -f README.html
