@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys
 import os
@@ -101,15 +102,22 @@ def input_consumer_pair():
 
 
 def from_now(time):
-    diff = datetime.utcnow() - time
-    assert diff.total_seconds() >= 0
-    assert diff.days >= 0
+    """ Return a human-readable relative time from now. """
 
+    diff = datetime.utcnow() - time
+
+    # -999999999 <= days <= 999999999
     if diff.days == 1:
         return '1 day ago'
     elif diff.days > 1:
         return '%d days ago' % diff.days
 
+    # Equivalent to (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+    # Negative value means the time is in the future
+    elif diff.total_seconds() < 0:
+        return 'just now'
+
+    # 0 <= seconds < 3600*24 (the number of seconds in one day)
     elif diff.seconds < 60:
         return 'just now'
     elif diff.seconds // 60 == 1:
