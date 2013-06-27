@@ -8,6 +8,7 @@ import argparse
 import ConfigParser
 from HTMLParser import HTMLParser
 from datetime import datetime
+from string import Formatter
 
 import twitter
 
@@ -50,6 +51,15 @@ class PtwitError(Exception):
     """ Application error. """
 
     pass
+
+
+class DefaultFormatter(Formatter):
+    def get_value(self, key, args, kwargs):
+        # Try standard formatting, if key not found then return None
+        try:
+            return Formatter.get_value(self, key, args, kwargs)
+        except KeyError:
+            return None
 
 
 def get_oauth(consumer_key, consumer_secret):
@@ -273,17 +283,16 @@ class TwitterCommands(object):
 
     def _print_user(self, user):
         user = user.AsDict()
-        user.setdefault('description', None)
-        user.setdefault('url', None)
         created_at = datetime.strptime(
             user['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
         format_string = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
-        print unicode(format_string).format(created_at,
-                                            from_now = from_now(created_at),
-                                            **user)
+        formatter = DefaultFormatter()
+        print formatter.format(unicode(format_string), created_at,
+                               from_now = from_now(created_at),
+                               **user)
 
     def _print_users(self, users):
         for user in users:
@@ -298,9 +307,11 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print unicode(format_string).format(created_at,
-                                            from_now=from_now(created_at),
-                                            **tweet)
+        formatter = DefaultFormatter()
+        print formatter.format(unicode(format_string),
+                               created_at,
+                               from_now=from_now(created_at),
+                               **tweet)
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -315,9 +326,11 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print unicode(format_string).format(created_at,
-                                            from_now=from_now(created_at),
-                                            **tweet)
+        formatter = DefaultFormatter()
+        print formatter.format(unicode(format_string),
+                               created_at,
+                               from_now=from_now(created_at),
+                               **tweet)
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -331,9 +344,11 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             message['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print unicode(format_string).format(created_at,
-                                            from_now=from_now(created_at),
-                                            **message)
+        formatter = DefaultFormatter()
+        print formatter.format(unicode(format_string),
+                               created_at,
+                               from_now=from_now(created_at),
+                               **message)
 
     def _print_messages(self, messages):
         for message in messages:
