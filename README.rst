@@ -9,7 +9,7 @@ Introduction
 Screenshots
 ~~~~~~~~~~~
 
-.. image:: http://farm8.staticflickr.com/7326/9144252605_8e73c1d206_z.jpg
+.. image:: http://farm8.staticflickr.com/7326/9144252605_46bb544fe8_z.jpg
 
 
 Requirements
