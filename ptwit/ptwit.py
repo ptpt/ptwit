@@ -665,14 +665,13 @@ def choose_config_name(default, config):
 
     while True:
         try:
-            name = raw_input(
-                'Enter a config name (%s): ' % default).strip()
+            name = raw_input('Enter a config name (%s): ' % default).strip()
         except KeyboardInterrupt:
             sys.exit(10)
         if not name:
             name = default
         if name in config.list_accounts():
-            raise PtwitError('Config "%s" exists.' % name)
+            print('Cannot create config "{name}": config exists'.format(name=name), file=sys.stderr)
         elif name:
             break
 

@@ -85,7 +85,7 @@ class TestInput(unittest.TestCase):
 
     def test_choose_name(self):
         config = PtwitConfig(self.filename)
-        values = iter(['hello', 'world', '', 'ptpt'])
+        values = iter(['hello', 'world', '', 'ptpt', 'haha'])
 
         def raw_input(prompt=''):
             return values.next()
@@ -95,7 +95,7 @@ class TestInput(unittest.TestCase):
         self.assertEqual('world', ptwit.choose_config_name('default', config))
         self.assertEqual('default', ptwit.choose_config_name('default', config))
         config.set('hello', 'world', account='ptpt')
-        self.assertRaises(ptwit.PtwitError, ptwit.choose_config_name, 'default', config)
+        self.assertEqual('haha', ptwit.choose_config_name('default', config))
 
     def test_get_consumer_and_token(self):
         consumer_key = 'consumer_key'
