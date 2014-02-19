@@ -7,8 +7,17 @@ import sys
 import os
 import time
 import argparse
-import ConfigParser
-from HTMLParser import HTMLParser
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
+
+try:
+    from HTMLParser import HTMLParser
+except ImportError:
+    import html.parser as HTMLParser
+
 from datetime import datetime
 from string import Formatter
 
