@@ -23,7 +23,7 @@ import webbrowser
 import twitter
 
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __author__ = 'Tao Peng'
 __license__ = 'MIT'
 __copyright__ = 'Copyright (c) 2012-2013 Tao Peng'
