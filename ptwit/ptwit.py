@@ -7,21 +7,21 @@ import sys
 import os
 import time
 import argparse
-
 try:
     import ConfigParser
 except ImportError:
     import configparser as ConfigParser
-
 try:
     from HTMLParser import HTMLParser
 except ImportError:
     import html.parser as HTMLParser
-
 from datetime import datetime
 from string import Formatter
+from urlparse import parse_qsl
+import webbrowser
 
 import twitter
+import oauth2 as oauth
 
 
 MAX_COUNT = 200
@@ -72,10 +72,6 @@ class DefaultFormatter(Formatter):
 
 def get_oauth(consumer_key, consumer_secret):
     """ Take consumer key and secret, return authorized tokens. """
-
-    import webbrowser
-    import oauth2 as oauth
-    from urlparse import parse_qsl
 
     oauth_consumer = oauth.Consumer(key=consumer_key, secret=consumer_secret)
     oauth_client = oauth.Client(oauth_consumer)
