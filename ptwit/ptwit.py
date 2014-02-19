@@ -27,23 +27,22 @@ MAX_COUNT = 200
 
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
-FORMAT_TWEET = '''\t\033[7m {user[name]} \033[0m (@{user[screen_name]})
+FORMAT_TWEET = u'''\t\033[7m {user[name]} \033[0m (@{user[screen_name]})
 \t{text}
 \t\033[35m{from_now}\033[0m
 '''
 
-FORMAT_SEARCH = '''\t\033[7m {user[screen_name]} \033[0m
+FORMAT_SEARCH = u'''\t\033[7m {user[screen_name]} \033[0m
 \t{text}
 \t\033[35m{from_now}\033[0m
 '''
 
-FORMAT_MESSAGE = '''\t\033[7m {sender_screen_name} \033[0m
+FORMAT_MESSAGE = u'''\t\033[7m {sender_screen_name} \033[0m
 \t{text}
 \t\033[35m{from_now}\033[0m
 '''
 
-FORMAT_USER = \
-'''\033[7m {name} \033[0m (@{screen_name})
+FORMAT_USER = u'''\033[7m {name} \033[0m (@{screen_name})
 Location:    {location}
 URL:         {url}
 Followers:   {followers_count}
@@ -323,9 +322,9 @@ class TwitterCommands(object):
         format_string = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
-        print(self.formatter.format(unicode(format_string), created_at,
+        print(self.formatter.format(format_string, created_at,
                                     from_now=from_now(created_at),
-                                    **user))
+                                    **user).encode('utf-8'))
 
     def _print_users(self, users):
         for user in users:
@@ -340,10 +339,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print(self.formatter.format(unicode(format_string),
+        print(self.formatter.format(format_string,
                                     created_at,
                                     from_now=from_now(created_at),
-                                    **tweet))
+                                    **tweet).encode('utf-8'))
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -358,10 +357,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print(self.formatter.format(unicode(format_string),
+        print(self.formatter.format(format_string,
                                     created_at,
                                     from_now=from_now(created_at),
-                                    **tweet))
+                                    **tweet).encode('utf-8'))
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -375,10 +374,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             message['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print(self.formatter.format(unicode(format_string),
+        print(self.formatter.format(format_string,
                                     created_at,
                                     from_now=from_now(created_at),
-                                    **message))
+                                    **message).encode('utf-8'))
 
     def _print_messages(self, messages):
         for message in messages:
