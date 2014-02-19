@@ -6,6 +6,9 @@ try:
 except ImportError:
     from distutils.core import setup
 
+import ptwit
+
+
 requires = ['python-twitter>=1.0']
 
 
@@ -15,7 +18,7 @@ def readme():
 
 
 setup(name='ptwit',
-      version='0.0.7',
+      version=ptwit.__version__,
       description='A simple twitter command line client',
       long_description=readme(),
       classifiers=[
@@ -26,10 +29,10 @@ setup(name='ptwit',
           'Intended Audience :: End Users/Desktop',
           'Topic :: Utilities'],
       url='http://github.com/ptpt/ptwit',
-      author='Tao Peng',
+      author=ptwit.__author__,
       author_email='ptpttt+ptwit@gmail.com',
       keywords='twitter, command-line, client',
-      license='MIT',
+      license=ptwit.__license__,
       py_modules=['ptwit'],
       install_requires=requires,
       entry_points={
