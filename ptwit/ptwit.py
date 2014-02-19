@@ -28,22 +28,19 @@ MAX_COUNT = 200
 
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
-FORMAT_TWEET = \
-'''	\033[7m {user[name]} \033[0m (@{user[screen_name]})
-	{text}
-	\033[35m{from_now}\033[0m
+FORMAT_TWEET = '''\t\033[7m {user[name]} \033[0m (@{user[screen_name]})
+\t{text}
+\t\033[35m{from_now}\033[0m
 '''
 
-FORMAT_SEARCH = \
-'''	\033[7m {user[screen_name]} \033[0m
-	{text}
-	\033[35m{from_now}\033[0m
+FORMAT_SEARCH = '''\t\033[7m {user[screen_name]} \033[0m
+\t{text}
+\t\033[35m{from_now}\033[0m
 '''
 
-FORMAT_MESSAGE = \
-'''	\033[7m {sender_screen_name} \033[0m
-	{text}
-	\033[35m{from_now}\033[0m
+FORMAT_MESSAGE = '''\t\033[7m {sender_screen_name} \033[0m
+\t{text}
+\t\033[35m{from_now}\033[0m
 '''
 
 FORMAT_USER = \
