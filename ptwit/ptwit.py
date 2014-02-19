@@ -21,7 +21,6 @@ from urlparse import parse_qsl
 import webbrowser
 
 import twitter
-import oauth2 as oauth2
 
 
 MAX_COUNT = 200
@@ -70,12 +69,35 @@ class DefaultFormatter(Formatter):
             return None
 
 
+def oauthlib_fetch_access_token(client_key, client_secret):
+    """ Fetch twitter access token using oauthlib. """
+
+    # fetch request token
+    oauth = OAuth1Session(client_key, client_secret=client_secret)
+    fetch_response = oauth.fetch_request_token(twitter.REQUEST_TOKEN_URL)
+    resource_owner_key = fetch_response.get('oauth_token')
+    resource_owner_secret = fetch_response.get('oauth_token_secret')
+    # authorization
+    authorization_url = oauth.authorization_url(twitter.AUTHORIZATION_URL)
+    print('Opening: ', authorization_url)
+    webbrowser.open_new_tab(authorization_url)
+    time.sleep(1)
+    pincode = raw_input('Enter the pincode: ')
+    oauth = OAuth1Session(client_key,
+                          client_secret=client_secret,
+                          resource_owner_key=resource_owner_key,
+                          resource_owner_secret=resource_owner_secret,
+                          verifier=pincode)
+    # fetch access token
+    oauth_tokens = oauth.fetch_access_token(twitter.ACCESS_TOKEN_URL)
+    return oauth_tokens.get('oauth_token'), oauth_tokens.get('oauth_token_secret')
+
+
 def oauth2_fetch_access_token(consumer_key, consumer_secret):
-    """ Take consumer key and secret, return authorized access token. """
+    """ Fetch twitter access token using oauth2. """
 
     oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
     oauth_client = oauth2.Client(oauth_consumer)
-
     # get request token
     resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
     if resp['status'] != '200':
@@ -83,16 +105,14 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
             'Invalid respond from Twitter requesting temp token: %s' %
             resp['status'])
     request_token = dict(parse_qsl(content))
-
-    # get pin-code
+    # authorization
     authorization_url = '%s?oauth_token=%s' % \
         (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
     print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
     pincode = raw_input('Enter the pincode: ')
-
-    # get access token
+    # fetch access token
     token = oauth2.Token(request_token['oauth_token'],
                         request_token['oauth_token_secret'])
     token.set_verifier(pincode)
@@ -107,6 +127,14 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
 
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
+
+
+try:
+    import oauth2 as oauth2
+    fetch_access_token = oauth2_fetch_access_token
+except ImportError:
+    from requests_oauthlib import OAuth1Session
+    fetch_access_token = oauthlib_fetch_access_token
 
 
 def input_consumer_pair():
@@ -624,7 +652,7 @@ def get_consumer_and_token(config, account):
 
         # if token pairs still not found, get them from twitter oauth server
         if not (token_key and token_secret):
-            token_key, token_secret = oauth2_fetch_access_token(consumer_key, consumer_secret)
+            token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
         sys.exit(10)
 
