@@ -21,7 +21,7 @@ from urlparse import parse_qsl
 import webbrowser
 
 import twitter
-import oauth2 as oauth
+import oauth2 as oauth2
 
 
 MAX_COUNT = 200
@@ -70,11 +70,11 @@ class DefaultFormatter(Formatter):
             return None
 
 
-def get_oauth(consumer_key, consumer_secret):
-    """ Take consumer key and secret, return authorized tokens. """
+def oauth2_fetch_access_token(consumer_key, consumer_secret):
+    """ Take consumer key and secret, return authorized access token. """
 
-    oauth_consumer = oauth.Consumer(key=consumer_key, secret=consumer_secret)
-    oauth_client = oauth.Client(oauth_consumer)
+    oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
+    oauth_client = oauth2.Client(oauth_consumer)
 
     # get request token
     resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
@@ -93,10 +93,10 @@ def get_oauth(consumer_key, consumer_secret):
     pincode = raw_input('Enter the pincode: ')
 
     # get access token
-    token = oauth.Token(request_token['oauth_token'],
+    token = oauth2.Token(request_token['oauth_token'],
                         request_token['oauth_token_secret'])
     token.set_verifier(pincode)
-    oauth_client = oauth.Client(oauth_consumer, token)
+    oauth_client = oauth2.Client(oauth_consumer, token)
     resp, content = oauth_client.request(twitter.ACCESS_TOKEN_URL,
                                          method='POST',
                                          body='oauth_verifier=%s' % pincode)
@@ -624,7 +624,7 @@ def get_consumer_and_token(config, account):
 
         # if token pairs still not found, get them from twitter oauth server
         if not (token_key and token_secret):
-            token_key, token_secret = get_oauth(consumer_key, consumer_secret)
+            token_key, token_secret = oauth2_fetch_access_token(consumer_key, consumer_secret)
     except (KeyboardInterrupt, EOFError):
         sys.exit(10)
 
@@ -712,7 +712,6 @@ def cmd():
     except PtwitError as err:
         print('Error: %s' % err.message, file=sys.stderr)
         sys.exit(2)
-
     sys.exit(0)
 
 
