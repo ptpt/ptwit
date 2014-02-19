@@ -488,7 +488,7 @@ class TwitterCommands(object):
         term = ' '.join(self.args.term)
         # convert to unicode
         term = term.decode('utf-8')
-        tweets = self.api.GetSearch(term=term)  # todo: can't encode unicode; fix it
+        tweets = self.api.GetSearch(term=term)
         self._print_searches(tweets)
 
     def whois(self):
