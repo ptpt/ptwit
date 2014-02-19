@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import division, print_function
+
 import sys
 import os
 import time
@@ -80,10 +82,10 @@ def get_oauth(consumer_key, consumer_secret):
             resp['status'])
     request_token = dict(parse_qsl(content))
 
-    # get pincode
+    # get pin-code
     authorization_url = '%s?oauth_token=%s' % \
         (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
-    print 'Opening:', authorization_url
+    print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
     pincode = raw_input('Enter the pincode: ')
@@ -100,6 +102,7 @@ def get_oauth(consumer_key, consumer_secret):
     if resp['status'] != '200':
         raise PtwitError('The request for a Token did not succeed: %s' %
                          resp['status'])
+
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
 
@@ -208,7 +211,7 @@ class ConfigCommands(object):
     def accounts(self):
         """ List all accounts. """
         for config in self.config.list_accounts():
-            print config
+            print(config)
 
     def get(self):
         """ Command: get OPTION... """
@@ -217,9 +220,9 @@ class ConfigCommands(object):
             for option in self.args.options:
                 value = self.config.get(option, account=account)
                 if value:
-                    print value
+                    print(value)
                 else:
-                    print >> sys.stderr, "Option \"%s\" is not found." % option
+                    print('Option "%s" is not found.' % option, file=sys.stderr)
         else:
             self.config.config.write(sys.stdout)
 
@@ -229,7 +232,7 @@ class ConfigCommands(object):
             if account in self.config.list_accounts():
                 self.config.remove_account(account)
             else:
-                print >> sys.stderr, 'Account "%s" doesn\'t exist.' % account
+                print('Account "%s" doesn\'t exist.' % account, file=sys.stderr)
         self.config.save()
 
     def login(self):
@@ -290,9 +293,9 @@ class TwitterCommands(object):
         format_string = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
-        print self.formatter.format(unicode(format_string), created_at,
-                                    from_now = from_now(created_at),
-                                    **user)
+        print(self.formatter.format(unicode(format_string), created_at,
+                                    from_now=from_now(created_at),
+                                    **user))
 
     def _print_users(self, users):
         for user in users:
@@ -307,10 +310,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print self.formatter.format(unicode(format_string),
+        print(self.formatter.format(unicode(format_string),
                                     created_at,
                                     from_now=from_now(created_at),
-                                    **tweet)
+                                    **tweet))
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -325,10 +328,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print self.formatter.format(unicode(format_string),
+        print(self.formatter.format(unicode(format_string),
                                     created_at,
                                     from_now=from_now(created_at),
-                                    **tweet)
+                                    **tweet))
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -342,10 +345,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             message['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print self.formatter.format(unicode(format_string),
+        print(self.formatter.format(unicode(format_string),
                                     created_at,
                                     from_now=from_now(created_at),
-                                    **message)
+                                    **message))
 
     def _print_messages(self, messages):
         for message in messages:
@@ -442,11 +445,11 @@ class TwitterCommands(object):
 
     def follow(self):
         user = self.api.CreateFriendship(self.args.user)
-        print 'You have requested to follow @%s' % user.screen_name
+        print('You have requested to follow @%s' % user.screen_name)
 
     def unfollow(self):
         user = self.api.DestroyFriendship(self.args.user)
-        print 'You have unfollowed @%s' % user.screen_name
+        print('You have unfollowed @%s' % user.screen_name)
 
     def faves(self):
         tweets = self.api.GetFavorites(screen_name=self.args.user)
@@ -702,10 +705,10 @@ def cmd():
         sys.exit(main(sys.argv[1:]))
     except twitter.TwitterError as err:
         for e in err.message:
-            print >> sys.stderr, 'Twitter Error (code %d): %s' % (e['code'], e['message'])
+            print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
         sys.exit(1)
     except PtwitError as err:
-        print >> sys.stderr, 'Error: %s' % err.message
+        print('Error: %s' % err.message, file=sys.stderr)
         sys.exit(2)
 
     sys.exit(0)
