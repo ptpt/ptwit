@@ -23,6 +23,12 @@ import webbrowser
 import twitter
 
 
+__version__ = '0.0.7'
+__author__ = 'Tao Peng'
+__license__ = 'MIT'
+__copyright__ = 'Copyright (c) 2012-2013 Tao Peng'
+
+
 MAX_COUNT = 200
 
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
@@ -322,7 +328,8 @@ class TwitterCommands(object):
         format_string = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
-        print(self.formatter.format(format_string, created_at,
+        print(self.formatter.format(format_string,
+                                    created_at,
                                     from_now=from_now(created_at),
                                     **user).encode('utf-8'))
 
