@@ -1,11 +1,9 @@
 import unittest
 import os
 import tempfile
-from shutil import rmtree
-from datetime import datetime
 
-from ptwit import ptwit
-from ptwit.ptwit import PtwitConfig
+import ptwit
+from ptwit import PtwitConfig
 
 
 class TestPtwitConfig(unittest.TestCase):
