@@ -130,8 +130,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
     access_token = dict(parse_qsl(content))
     if resp['status'] != '200':
         raise AuthorizationError(
-            'The request for a Token did not succeed: {0}'.format(resp['status'])
-        )
+            'The request for a Token did not succeed: {0}'.format(resp['status']))
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
 
@@ -274,36 +273,11 @@ class ConfigCommands(object):
 
     def login(self):
         """ Command: login [ACCOUNT] """
-
-        if not self.args.account:
-            consumer_key, consumer_secret, token_key, token_secret = \
-                get_consumer_and_token(self.config, None)
-            # todo: split get_consumer_and_token into two functions
-
-            api = twitter.Api(consumer_key=consumer_key,
-                              consumer_secret=consumer_secret,
-                              access_token_key=token_key,
-                              access_token_secret=token_secret)
-
-            account = choose_config_name(api.VerifyCredentials().screen_name, self.config)
-            self.config.set('default_account', account)
-
-            if not self.config.get('consumer_key'):
-                self.config.set('consumer_key', consumer_key)
-            if self.config.get('consumer_key', account=account):
-                self.config.set('consumer_key', consumer_key, account=account)
-
-            if not self.config.get('consumer_secret'):
-                self.config.set('consumer_secret', consumer_secret)
-            if self.config.get('consumer_secret', account=account):
-                self.config.set('consumer_secret', consumer_secret, account=account)
-
-            self.config.set('token_key', token_key, account=account)
-            self.config.set('token_secret', token_secret, account=account)
-        else:
+        if self.args.account:
             self.config.set('default_account', self.args.account)
-
-        self.config.save()
+            self.config.save()
+        else:
+            login(self.config, None)
 
     def call(self, function=None):
         if function is None:
@@ -511,8 +485,7 @@ class TwitterCommands(object):
 def parse_args(argv):
     """ Parse command arguments. """
 
-    parser = argparse.ArgumentParser(description='Twitter command-line.',
-                                     prog='ptwit')
+    parser = argparse.ArgumentParser(description='Twitter command-line.', prog='ptwit')
 
     # global options
     parser.add_argument('-a', dest='specified_account', metavar='ACCOUNT',
@@ -610,8 +583,7 @@ def parse_args(argv):
     config_parser = subparsers.add_parser('config', help='manage config')
     config_parser.add_argument('-g', action='store_true', dest='g',
                                help='apply global configuration only')
-    pp = config_parser.add_subparsers(title='config',
-                                      help='config commands')
+    pp = config_parser.add_subparsers(title='config', help='config commands')
 
     # config set
     p = pp.add_parser('set', help='set option')
@@ -684,20 +656,7 @@ def choose_config_name(default, config):
     return name
 
 
-def main(argv=None):
-    """ Parse arguments and issue commands. """
-
-    if argv is None:
-        argv = sys.argv[1:]
-    args = parse_args(argv)
-    config = PtwitConfig(CONFIG_FILE)
-    account = args.specified_account or config.get('default_account')
-
-    if args.type == ConfigCommands:
-        commands = ConfigCommands(args, config, account)
-        commands.call(args.function)
-        sys.exit(0)
-
+def login(config, account):
     try:
         consumer_key, consumer_secret, token_key, token_secret = \
             get_consumer_and_token(config, account)
@@ -713,38 +672,46 @@ def main(argv=None):
             access_token_key=token_key,
             access_token_secret=token_secret)
     except twitter.TwitterError as e:
-        print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
+        print('Twitter Error (code {0}): {1}'.format(e['code'], e['message']),
+              file=sys.stderr)
         sys.exit(1)
-
     if not account:
         account = choose_config_name(api.VerifyCredentials().screen_name, config)
         config.set('default_account', account)
-
     if not config.get('consumer_key'):
         config.set('consumer_key', consumer_key)
     if config.get('consumer_key', account=account):
-        # update consumer key
         config.set('consumer_key', consumer_key, account=account)
-
     if not config.get('consumer_secret'):
         config.set('consumer_secret', consumer_secret)
     if config.get('consumer_secret', account=account):
-        # update consumer secret
         config.set('consumer_secret', consumer_secret, account=account)
-
     config.set('token_key', token_key, account=account)
     config.set('token_secret', token_secret, account=account)
-
     config.save()
+    return api
 
+
+def main(argv=None):
+    """ Parse arguments and issue commands. """
+    if argv is None:
+        argv = sys.argv[1:]
+    args = parse_args(argv)
+    config = PtwitConfig(CONFIG_FILE)
+    account = args.specified_account or config.get('default_account')
+    if args.type == ConfigCommands:
+        commands = ConfigCommands(args, config, account)
+        commands.call(args.function)
+        sys.exit(0)
+    api = login(config, account)
     assert args.type == TwitterCommands
     commands = TwitterCommands(api, args, config, account)
     try:
         commands.call(args.function)
     except twitter.TwitterError as e:
-        print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
+        print('Twitter Error (code %d): %s' % (e['code'], e['message']),
+              file=sys.stderr)
         sys.exit(1)
-
     sys.exit(0)
 
 
