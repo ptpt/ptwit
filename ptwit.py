@@ -613,29 +613,6 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
-def get_consumer_and_token(config, account):
-    """Get consumer pairs and token pairs from config or prompt."""
-
-    consumer_key = config.get('consumer_key', account=account) \
-        or config.get('consumer_key')
-    consumer_secret = config.get('consumer_secret', account=account) \
-        or config.get('consumer_secret')
-
-    token_key = config.get('token_key', account=account)
-    token_secret = config.get('token_secret', account=account)
-
-    # if consumer pairs still not found, then let user input
-    if not (consumer_key and consumer_secret):
-        # todo: rename to input_consumer
-        consumer_key, consumer_secret = input_consumer_pair()
-
-    # if token pairs still not found, get them from twitter oauth server
-    if not (token_key and token_secret):
-        token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
-
-    return consumer_key, consumer_secret, token_key, token_secret
-
-
 def choose_config_name(default, config):
     """ Prompt for choosing config name. """
 
@@ -657,26 +634,24 @@ def choose_config_name(default, config):
 
 
 def login(config, account):
-    try:
-        consumer_key, consumer_secret, token_key, token_secret = \
-            get_consumer_and_token(config, account)
-    except KeyboardInterrupt:
-        sys.exit(0)
-    except AuthorizationError as e:
-        print('Authorization Error: {0}'.format(e.message))
-        sys.exit(2)
-    try:
-        api = twitter.Api(
-            consumer_key=consumer_key,
-            consumer_secret=consumer_secret,
-            access_token_key=token_key,
-            access_token_secret=token_secret)
-    except twitter.TwitterError as e:
-        print('Twitter Error (code {0}): {1}'.format(e['code'], e['message']),
-              file=sys.stderr)
-        sys.exit(1)
+    consumer_key = config.get('consumer_key', account=account) \
+        or config.get('consumer_key')
+    consumer_secret = config.get('consumer_secret', account=account) \
+        or config.get('consumer_secret')
+    token_key = config.get('token_key', account=account)
+    token_secret = config.get('token_secret', account=account)
+    if not (consumer_key and consumer_secret):
+        # todo: rename to input_consumer
+        consumer_key, consumer_secret = input_consumer_pair()
+    if not (token_key and token_secret):
+        token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
+    api = twitter.Api(consumer_key=consumer_key,
+                      consumer_secret=consumer_secret,
+                      access_token_key=token_key,
+                      access_token_secret=token_secret)
     if not account:
-        account = choose_config_name(api.VerifyCredentials().screen_name, config)
+        user = api.VerifyCredentials()
+        account = choose_config_name(user.screen_name, config)
         config.set('default_account', account)
     if not config.get('consumer_key'):
         config.set('consumer_key', consumer_key)
@@ -706,12 +681,7 @@ def main(argv=None):
     api = login(config, account)
     assert args.type == TwitterCommands
     commands = TwitterCommands(api, args, config, account)
-    try:
-        commands.call(args.function)
-    except twitter.TwitterError as e:
-        print('Twitter Error (code %d): %s' % (e['code'], e['message']),
-              file=sys.stderr)
-        sys.exit(1)
+    commands.call(args.function)
     sys.exit(0)
 
 
