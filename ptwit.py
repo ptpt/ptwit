@@ -741,9 +741,8 @@ def main(argv):
 def cmd():
     try:
         sys.exit(main(sys.argv[1:]))
-    except twitter.TwitterError as err:
-        for e in err.message:
-            print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
+    except twitter.TwitterError as e:
+        print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
         sys.exit(1)
     except PtwitError as err:
         print('Error: %s' % err.message, file=sys.stderr)
