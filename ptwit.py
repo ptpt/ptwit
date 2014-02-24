@@ -52,13 +52,13 @@ FORMAT_MESSAGE = u'''\t\033[7m {sender_screen_name} \033[0m
 '''
 
 FORMAT_USER = u'''\033[7m {name} \033[0m (@{screen_name})
-Location:    {location}
-URL:         {url}
-Followers:   {followers_count}
-Following:   {friends_count}
-Status:      {statuses_count}
-Description: {description}
-Created at:  {from_now} ({0:%Y-%m-%d})
+Location:     {location}
+URL:          {url}
+Followers:    {followers_count}
+Following:    {friends_count}
+Status:       {statuses_count}
+Description:  {description}
+Joined on:    {0:%Y-%m-%d} ({from_now})
 '''
 
 
