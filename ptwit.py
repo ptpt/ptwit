@@ -143,13 +143,6 @@ except ImportError:
     fetch_access_token = oauthlib_fetch_access_token
 
 
-def input_consumer_pair():
-    """ Input consumer key/secret pair """
-
-    return raw_input('Consumer key: ').strip(), \
-        raw_input('Consumer secret: ').strip()
-
-
 def from_now(time):
     """ Return a human-readable relative time from now. """
 
@@ -641,8 +634,8 @@ def login(config, account):
     token_key = config.get('token_key', account=account)
     token_secret = config.get('token_secret', account=account)
     if not (consumer_key and consumer_secret):
-        # todo: rename to input_consumer
-        consumer_key, consumer_secret = input_consumer_pair()
+        consumer_key = raw_input('Consumer key: ').strip()
+        consumer_secret = raw_input('Consumer secret: ').strip()
     if not (token_key and token_secret):
         token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
     api = twitter.Api(consumer_key=consumer_key,
