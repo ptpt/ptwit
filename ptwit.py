@@ -3,6 +3,11 @@
 
 from __future__ import division, print_function
 
+__version__ = '0.0.8'
+__author__ = 'Tao Peng'
+__license__ = 'MIT'
+__copyright__ = 'Copyright (c) 2012-2013 Tao Peng'
+
 import sys
 import os
 import time
@@ -24,12 +29,6 @@ except ImportError:
 import webbrowser
 
 import twitter
-
-
-__version__ = '0.0.8'
-__author__ = 'Tao Peng'
-__license__ = 'MIT'
-__copyright__ = 'Copyright (c) 2012-2013 Tao Peng'
 
 
 MAX_COUNT = 200
