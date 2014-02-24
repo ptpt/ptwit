@@ -685,11 +685,12 @@ def choose_config_name(default, config):
     return name
 
 
-def main(argv):
+def main(argv=None):
     """ Parse arguments and issue commands. """
 
+    if argv is None:
+        argv = sys.argv[1:]
     args = parse_args(argv)
-
     config = PtwitConfig(CONFIG_FILE)
     account = args.specified_account or config.get('default_account')
 
@@ -704,11 +705,15 @@ def main(argv):
     except KeyboardInterrupt:
         sys.exit(0)
 
-    api = twitter.Api(
-        consumer_key=consumer_key,
-        consumer_secret=consumer_secret,
-        access_token_key=token_key,
-        access_token_secret=token_secret)
+    try:
+        api = twitter.Api(
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            access_token_key=token_key,
+            access_token_secret=token_secret)
+    except twitter.TwitterError as e:
+        print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
+        sys.exit(1)
 
     if not account:
         account = choose_config_name(api.VerifyCredentials().screen_name, config)
@@ -733,9 +738,13 @@ def main(argv):
 
     assert args.type == TwitterCommands
     commands = TwitterCommands(api, args, config, account)
-    commands.call(args.function)
+    try:
+        commands.call(args.function)
+    except twitter.TwitterError as e:
+        print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
+        sys.exit(1)
 
-    return 0
+    sys.exit(0)
 
 
 def cmd():
