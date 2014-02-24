@@ -653,17 +653,14 @@ def get_consumer_and_token(config, account):
     token_key = config.get('token_key', account=account)
     token_secret = config.get('token_secret', account=account)
 
-    try:
-        # if consumer pairs still not found, then let user input
-        if not (consumer_key and consumer_secret):
-            # todo: rename to input_consumer
-            consumer_key, consumer_secret = input_consumer_pair()
+    # if consumer pairs still not found, then let user input
+    if not (consumer_key and consumer_secret):
+        # todo: rename to input_consumer
+        consumer_key, consumer_secret = input_consumer_pair()
 
-        # if token pairs still not found, get them from twitter oauth server
-        if not (token_key and token_secret):
-            token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
-    except (KeyboardInterrupt, EOFError):
-        sys.exit(10)
+    # if token pairs still not found, get them from twitter oauth server
+    if not (token_key and token_secret):
+        token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
 
     return consumer_key, consumer_secret, token_key, token_secret
 
@@ -699,10 +696,13 @@ def main(argv):
     if args.type == ConfigCommands:
         commands = ConfigCommands(args, config, account)
         commands.call(args.function)
-        return 0
+        sys.exit(0)
 
-    consumer_key, consumer_secret, token_key, token_secret = \
-        get_consumer_and_token(config, account)
+    try:
+        consumer_key, consumer_secret, token_key, token_secret = \
+            get_consumer_and_token(config, account)
+    except KeyboardInterrupt:
+        sys.exit(0)
 
     api = twitter.Api(
         consumer_key=consumer_key,
