@@ -703,7 +703,9 @@ def main(argv=None):
             get_consumer_and_token(config, account)
     except KeyboardInterrupt:
         sys.exit(0)
-
+    except AuthorizationError as e:
+        print('Authorization Error: {0}'.format(e.message))
+        sys.exit(2)
     try:
         api = twitter.Api(
             consumer_key=consumer_key,
