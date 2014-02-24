@@ -685,5 +685,20 @@ def main(argv=None):
     sys.exit(0)
 
 
+def cmd():
+    try:
+        main()
+    except twitter.TwitterError as err:
+        print('Twitter Error (code {0}): {1}'.format(err['code'], err['message']),
+              file=sys.stderr)
+        sys.exit(1)
+    except AuthorizationError as err:
+        print('Authorization Error: {0}'.format(err.message),
+              file=sys.stderr)
+        sys.exit(2)
+    except KeyboardInterrupt:
+        pass
+
+
 if __name__ == '__main__':
-    main()
+    cmd()
