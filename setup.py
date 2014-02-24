@@ -36,5 +36,5 @@ setup(name='ptwit',
       py_modules=['ptwit'],
       install_requires=requires,
       entry_points={
-          'console_scripts': ['ptwit=ptwit:main']},
+          'console_scripts': ['ptwit=ptwit:cmd']},
       zip_safe=False)
