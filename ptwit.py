@@ -747,17 +747,5 @@ def main(argv=None):
     sys.exit(0)
 
 
-def cmd():
-    try:
-        sys.exit(main(sys.argv[1:]))
-    except twitter.TwitterError as e:
-        print('Twitter Error (code %d): %s' % (e['code'], e['message']), file=sys.stderr)
-        sys.exit(1)
-    except PtwitError as err:
-        print('Error: %s' % err.message, file=sys.stderr)
-        sys.exit(2)
-    sys.exit(0)
-
-
 if __name__ == '__main__':
-    cmd()
+    main()
