@@ -62,12 +62,6 @@ Joined on:    {0:%Y-%m-%d} ({from_now})
 '''
 
 
-class PtwitError(Exception):
-    """ Application error. """
-
-    pass
-
-
 class DefaultFormatter(Formatter):
     def get_value(self, key, args, kwargs):
         # Try standard formatting, if key not found then return None
@@ -75,6 +69,11 @@ class DefaultFormatter(Formatter):
             return Formatter.get_value(self, key, args, kwargs)
         except KeyError:
             return None
+
+
+class AuthorizationError(Exception):
+    """ Application error. """
+    pass
 
 
 def oauthlib_fetch_access_token(client_key, client_secret):
@@ -109,20 +108,21 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
     # get request token
     resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
     if resp['status'] != '200':
-        raise PtwitError(
-            'Invalid respond from Twitter requesting temp token: %s' %
-            resp['status'])
+        raise AuthorizationError(
+            'Invalid respond from Twitter requesting temp token: {0}'.format(resp['status'])
+        )
     request_token = dict(parse_qsl(content))
     # authorization
-    authorization_url = '%s?oauth_token=%s' % \
-        (twitter.AUTHORIZATION_URL, request_token['oauth_token'])
+    authorization_url = '{url}?oauth_token={token}'.format(
+        url=twitter.AUTHORIZATION_URL,
+        token=request_token['oauth_token'])
     print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
     pincode = raw_input('Enter the pincode: ')
     # fetch access token
     token = oauth2.Token(request_token['oauth_token'],
-                        request_token['oauth_token_secret'])
+                         request_token['oauth_token_secret'])
     token.set_verifier(pincode)
     oauth_client = oauth2.Client(oauth_consumer, token)
     resp, content = oauth_client.request(twitter.ACCESS_TOKEN_URL,
@@ -130,9 +130,9 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
                                          body='oauth_verifier=%s' % pincode)
     access_token = dict(parse_qsl(content))
     if resp['status'] != '200':
-        raise PtwitError('The request for a Token did not succeed: %s' %
-                         resp['status'])
-
+        raise AuthorizationError(
+            'The request for a Token did not succeed: {0}'.format(resp['status'])
+        )
     else:
         return access_token['oauth_token'], access_token['oauth_token_secret']
 
