@@ -95,34 +95,6 @@ class TestInput(unittest.TestCase):
         config.set('hello', 'world', account='ptpt')
         self.assertEqual('haha', ptwit.choose_config_name('default', config))
 
-    def test_get_consumer_and_token(self):
-        consumer_key = 'consumer_key'
-        consumer_secret = 'consumer_secret'
-        token_key = 'token_key'
-        token_secret = 'token_secret'
-
-        old_get_consumer = ptwit.input_consumer_pair
-        old_get_oauth = ptwit.fetch_access_token
-
-        ptwit.input_consumer_pair = lambda: (consumer_key, consumer_secret)
-        ptwit.fetch_access_token = lambda _, __: (token_key, token_secret)
-
-        config = PtwitConfig(self.filename)
-
-        self.assertEqual(ptwit.get_consumer_and_token(config, 'Tao'),
-                         (consumer_key, consumer_secret, token_key, token_secret))
-
-        ptwit.input_consumer_pair = old_get_consumer
-        ptwit.fetch_access_token = old_get_oauth
-
-        config.set('consumer_key', consumer_key)
-        config.set('consumer_secret', consumer_secret)
-        config.set('token_key', token_key, account='Tao')
-        config.set('token_secret', token_secret, account='Tao')
-
-        self.assertEqual(ptwit.get_consumer_and_token(config, 'Tao'),
-                         (consumer_key, consumer_secret, token_key, token_secret))
-
 
 if __name__ == '__main__':
     unittest.main()
