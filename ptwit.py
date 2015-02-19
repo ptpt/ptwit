@@ -60,6 +60,10 @@ Description:  {description}
 Joined on:    {0:%Y-%m-%d} ({from_now})
 '''
 
+REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
+AUTHORIZATION_URL = 'https://api.twitter.com/oauth/authenticate'
+ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
+
 
 class DefaultFormatter(Formatter):
     def get_value(self, key, args, kwargs):
@@ -77,14 +81,13 @@ class AuthorizationError(Exception):
 
 def oauthlib_fetch_access_token(client_key, client_secret):
     """ Fetch twitter access token using oauthlib. """
-
     # fetch request token
     oauth = OAuth1Session(client_key, client_secret=client_secret)
-    fetch_response = oauth.fetch_request_token(twitter.REQUEST_TOKEN_URL)
+    fetch_response = oauth.fetch_request_token(REQUEST_TOKEN_URL)
     resource_owner_key = fetch_response.get('oauth_token')
     resource_owner_secret = fetch_response.get('oauth_token_secret')
     # authorization
-    authorization_url = oauth.authorization_url(twitter.AUTHORIZATION_URL)
+    authorization_url = oauth.authorization_url(AUTHORIZATION_URL)
     print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
@@ -95,17 +98,16 @@ def oauthlib_fetch_access_token(client_key, client_secret):
                           resource_owner_secret=resource_owner_secret,
                           verifier=pincode)
     # fetch access token
-    oauth_tokens = oauth.fetch_access_token(twitter.ACCESS_TOKEN_URL)
+    oauth_tokens = oauth.fetch_access_token(ACCESS_TOKEN_URL)
     return oauth_tokens.get('oauth_token'), oauth_tokens.get('oauth_token_secret')
 
 
 def oauth2_fetch_access_token(consumer_key, consumer_secret):
     """ Fetch twitter access token using oauth2. """
-
     oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
     oauth_client = oauth2.Client(oauth_consumer)
     # get request token
-    resp, content = oauth_client.request(twitter.REQUEST_TOKEN_URL)
+    resp, content = oauth_client.request(REQUEST_TOKEN_URL)
     if resp['status'] != '200':
         raise AuthorizationError(
             'Invalid respond from Twitter requesting temp token: {0}'.format(resp['status'])
@@ -113,7 +115,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
     request_token = dict(parse_qsl(content))
     # authorization
     authorization_url = '{url}?oauth_token={token}'.format(
-        url=twitter.AUTHORIZATION_URL,
+        url=AUTHORIZATION_URL,
         token=request_token['oauth_token'])
     print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
@@ -124,7 +126,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
                          request_token['oauth_token_secret'])
     token.set_verifier(pincode)
     oauth_client = oauth2.Client(oauth_consumer, token)
-    resp, content = oauth_client.request(twitter.ACCESS_TOKEN_URL,
+    resp, content = oauth_client.request(ACCESS_TOKEN_URL,
                                          method='POST',
                                          body='oauth_verifier=%s' % pincode)
     access_token = dict(parse_qsl(content))
