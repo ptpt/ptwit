@@ -684,7 +684,7 @@ def cmd():
     try:
         status = main()
     except twitter.TwitterError as err:
-        print('Twitter Error (code {0}): {1}'.format(err['code'], err['message']),
+        print('Twitter Error: {0}'.format(err.message),
               file=sys.stderr)
         status = 1
     except AuthorizationError as err:
