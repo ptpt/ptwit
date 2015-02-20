@@ -3,10 +3,10 @@
 
 from __future__ import division, print_function
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 __author__ = 'Tao Peng'
 __license__ = 'MIT'
-__copyright__ = 'Copyright (c) 2012-2013 Tao Peng'
+__copyright__ = 'Copyright (c) 2012-2015 Tao Peng'
 
 import sys
 import os
@@ -75,12 +75,12 @@ class DefaultFormatter(Formatter):
 
 
 class AuthorizationError(Exception):
-    """ Application error. """
+    """Application error."""
     pass
 
 
 def oauthlib_fetch_access_token(client_key, client_secret):
-    """ Fetch twitter access token using oauthlib. """
+    """Fetch twitter access token using oauthlib."""
     # fetch request token
     oauth = OAuth1Session(client_key, client_secret=client_secret)
     fetch_response = oauth.fetch_request_token(REQUEST_TOKEN_URL)
@@ -103,7 +103,7 @@ def oauthlib_fetch_access_token(client_key, client_secret):
 
 
 def oauth2_fetch_access_token(consumer_key, consumer_secret):
-    """ Fetch twitter access token using oauth2. """
+    """Fetch twitter access token using oauth2."""
     oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
     oauth_client = oauth2.Client(oauth_consumer)
     # get request token
@@ -146,7 +146,7 @@ except ImportError:
 
 
 def from_now(time):
-    """ Return a human-readable relative time from now. """
+    """Return a human-readable relative time from now."""
 
     diff = datetime.utcnow() - time
 
@@ -227,25 +227,25 @@ class ConfigCommands(object):
         self.account = account
 
     def set(self):
-        """ Command: set OPTION VALUE """
+        """Command: set OPTION VALUE"""
         account = None if self.args.g else self.account
         self.config.set(self.args.option, self.args.value, account=account)
         self.config.save()
 
     def unset(self):
-        """ Command: unset OPTION... """
+        """Command: unset OPTION..."""
         account = None if self.args.g else self.account
         for option in self.args.options:
             self.config.unset(option, account=account)
         self.config.save()
 
     def accounts(self):
-        """ List all accounts. """
+        """List all accounts."""
         for config in self.config.list_accounts():
             print(config)
 
     def get(self):
-        """ Command: get OPTION... """
+        """Command: get OPTION..."""
         account = None if self.args.g else self.account
         if self.args.options:
             for option in self.args.options:
@@ -258,7 +258,7 @@ class ConfigCommands(object):
             self.config.config.write(sys.stdout)
 
     def remove(self):
-        """ Command: remove account... """
+        """Command: remove account..."""
         for account in self.args.accounts:
             if account in self.config.list_accounts():
                 self.config.remove_account(account)
@@ -267,7 +267,7 @@ class ConfigCommands(object):
         self.config.save()
 
     def login(self):
-        """ Command: login [ACCOUNT] """
+        """Command: login [ACCOUNT]"""
         if self.args.account:
             self.config.set('default_account', self.args.account)
             self.config.save()
@@ -478,7 +478,7 @@ class TwitterCommands(object):
 
 
 def parse_args(argv):
-    """ Parse command arguments. """
+    """Parse command arguments."""
 
     parser = argparse.ArgumentParser(description='Twitter command-line.', prog='ptwit')
 
@@ -609,7 +609,7 @@ def parse_args(argv):
 
 
 def choose_config_name(default, config):
-    """ Prompt for choosing config name. """
+    """Prompt for choosing config name."""
 
     name = default
 
@@ -663,7 +663,7 @@ def login(config, account):
 
 
 def main(argv=None):
-    """ Parse arguments and issue commands. """
+    """Parse arguments and issue commands."""
     if argv is None:
         argv = sys.argv[1:]
     args = parse_args(argv)
@@ -672,27 +672,28 @@ def main(argv=None):
     if args.type == ConfigCommands:
         commands = ConfigCommands(args, config, account)
         commands.call(args.function)
-        sys.exit(0)
+        return 0
     api = login(config, account)
     assert args.type == TwitterCommands
     commands = TwitterCommands(api, args, config, account)
     commands.call(args.function)
-    sys.exit(0)
+    return 0
 
 
 def cmd():
     try:
-        main()
+        status = main()
     except twitter.TwitterError as err:
         print('Twitter Error (code {0}): {1}'.format(err['code'], err['message']),
               file=sys.stderr)
-        sys.exit(1)
+        status = 1
     except AuthorizationError as err:
         print('Authorization Error: {0}'.format(err.message),
               file=sys.stderr)
-        sys.exit(2)
+        status = 2
     except KeyboardInterrupt:
-        pass
+        status = 3
+    sys.exit(status)
 
 
 if __name__ == '__main__':
