@@ -243,67 +243,6 @@ class PtwitConfig(object):
             self.config.write(fp)
 
 
-class ConfigCommands(object):
-    def __init__(self, args, config, account):
-        self.args = args
-        self.config = config
-        self.account = account
-
-    def set(self):
-        """Command: set OPTION VALUE"""
-        account = None if self.args.g else self.account
-        self.config.set(self.args.option, self.args.value, account=account)
-        self.config.save()
-
-    def unset(self):
-        """Command: unset OPTION..."""
-        account = None if self.args.g else self.account
-        for option in self.args.options:
-            self.config.unset(option, account=account)
-        self.config.save()
-
-    def accounts(self):
-        """List all accounts."""
-        for config in self.config.list_accounts():
-            click.echo(config)
-
-    def get(self):
-        """Command: get OPTION..."""
-        account = None if self.args.g else self.account
-        if self.args.options:
-            for option in self.args.options:
-                value = self.config.get(option, account=account)
-                if value:
-                    click.echo(value)
-                else:
-                    click.echo('Option "%s" is not found.' % option, file=sys.stderr)
-        else:
-            self.config.config.write(sys.stdout)
-
-    def remove(self):
-        """Command: remove account..."""
-        for account in self.args.accounts:
-            if account in self.config.list_accounts():
-                self.config.remove_account(account)
-            else:
-                click.echo('Account "%s" doesn\'t exist.' % account, file=sys.stderr)
-        self.config.save()
-
-    def login(self):
-        """Command: login [ACCOUNT]"""
-        if self.args.account:
-            self.config.set('default_account', self.args.account)
-            self.config.save()
-        else:
-            login(self.config, None)
-
-    def call(self, function=None):
-        if function is None:
-            getattr(self, self.args.call)()
-        else:
-            getattr(self, function)()
-
-
 class TwitterCommands(object):
     formatter = DefaultFormatter()
 
@@ -514,11 +453,6 @@ def parse_args(argv):
     #### twitter commands
     subparsers = parser.add_subparsers(title='twitter commands')
 
-    # login
-    p = subparsers.add_parser('login', help='login')
-    p.add_argument('account', nargs='?', metavar='ACCOUNT')
-    p.set_defaults(type=ConfigCommands, function='login')
-
     # public
     # p = subparsers.add_parser('public', help='list public timeline')
     # p.set_defaults(type=TwitterCommands, function='public')
@@ -595,37 +529,6 @@ def parse_args(argv):
     p.add_argument('term', nargs='+', metavar='TERM')
     p.set_defaults(type=TwitterCommands, function='search')
 
-    #### config commands
-    config_parser = subparsers.add_parser('config', help='manage config')
-    config_parser.add_argument('-g', action='store_true', dest='g',
-                               help='apply global configuration only')
-    pp = config_parser.add_subparsers(title='config', help='config commands')
-
-    # config set
-    p = pp.add_parser('set', help='set option')
-    p.add_argument('option', metavar='OPTION')
-    p.add_argument('value', metavar='VALUE')
-    p.set_defaults(type=ConfigCommands, function='set')
-
-    # config get
-    p = pp.add_parser('get', help='get options')
-    p.add_argument('options', metavar='OPTION', nargs='*')
-    p.set_defaults(type=ConfigCommands, function='get')
-
-    # config unset
-    p = pp.add_parser('unset', help='unset options')
-    p.add_argument('options', metavar='OPTION', nargs='+')
-    p.set_defaults(type=ConfigCommands, function='unset')
-
-    # config list all accounts
-    p = pp.add_parser('accounts', help='list all accounts')
-    p.set_defaults(type=ConfigCommands, function='accounts')
-
-    # config remove accounts
-    p = pp.add_parser('remove', help='remove accounts')
-    p.add_argument('accounts', nargs='+', metavar='ACCOUNT')
-    p.set_defaults(type=ConfigCommands, function='remove')
-
     return parser.parse_args(argv)
 
 
@@ -690,10 +593,6 @@ def main(argv=None):
     args = parse_args(argv)
     config = PtwitConfig(CONFIG_FILE)
     account = args.specified_account or config.get('default_account')
-    if args.type == ConfigCommands:
-        commands = ConfigCommands(args, config, account)
-        commands.call(args.function)
-        return 0
     api = login(config, account)
     assert args.type == TwitterCommands
     commands = TwitterCommands(api, args, config, account)
