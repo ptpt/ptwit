@@ -20,10 +20,7 @@ try:
     # Python 2
     from HTMLParser import HTMLParser
     _parser = HTMLParser()
-
-    def html_unescape(value):
-        return _parser.unescape(value)
-
+    html_unescape = _parser.unescape
 except ImportError:
     # Python 3
     from html import unescape as html_unescape
