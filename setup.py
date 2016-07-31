@@ -7,7 +7,7 @@ except ImportError:
     from distutils.core import setup
 
 
-requires = ['python-twitter>=1.0']
+requires = ['python-twitter>=1.0', 'click']
 
 
 def readme():

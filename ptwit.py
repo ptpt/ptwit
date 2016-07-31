@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
+from __future__ import (division, print_function)
 
 import sys
 import os
@@ -34,6 +34,7 @@ except ImportError:
     from urllib.parse import parse_qsl
 
 import twitter
+import click
 
 
 __version__ = '0.0.9'
@@ -106,7 +107,7 @@ def oauthlib_fetch_access_token(client_key, client_secret):
     resource_owner_secret = fetch_response.get('oauth_token_secret')
     # authorization
     authorization_url = oauth.authorization_url(AUTHORIZATION_URL)
-    print('Opening: ', authorization_url)
+    click.echo('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
     pincode = input('Enter the pincode: ')
@@ -135,7 +136,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
     authorization_url = '{url}?oauth_token={token}'.format(
         url=AUTHORIZATION_URL,
         token=request_token['oauth_token'])
-    print('Opening: ', authorization_url)
+    click.echo('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
     pincode = input('Enter the pincode: ')
@@ -264,7 +265,7 @@ class ConfigCommands(object):
     def accounts(self):
         """List all accounts."""
         for config in self.config.list_accounts():
-            print(config)
+            click.echo(config)
 
     def get(self):
         """Command: get OPTION..."""
@@ -273,9 +274,9 @@ class ConfigCommands(object):
             for option in self.args.options:
                 value = self.config.get(option, account=account)
                 if value:
-                    print(value)
+                    click.echo(value)
                 else:
-                    print('Option "%s" is not found.' % option, file=sys.stderr)
+                    click.echo('Option "%s" is not found.' % option, file=sys.stderr)
         else:
             self.config.config.write(sys.stdout)
 
@@ -285,7 +286,7 @@ class ConfigCommands(object):
             if account in self.config.list_accounts():
                 self.config.remove_account(account)
             else:
-                print('Account "%s" doesn\'t exist.' % account, file=sys.stderr)
+                click.echo('Account "%s" doesn\'t exist.' % account, file=sys.stderr)
         self.config.save()
 
     def login(self):
@@ -320,10 +321,10 @@ class TwitterCommands(object):
         format_string = self.args.format or \
             self.config.get('user_format', account=self.account) or \
             FORMAT_USER
-        print(self.formatter.format(format_string,
-                                    created_at,
-                                    from_now=from_now(created_at),
-                                    **user).encode('utf-8'))
+        click.echo(self.formatter.format(format_string,
+                                         created_at,
+                                         from_now=from_now(created_at),
+                                         **user))
 
     def _print_users(self, users):
         for user in users:
@@ -338,10 +339,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print(self.formatter.format(format_string,
-                                    created_at,
-                                    from_now=from_now(created_at),
-                                    **tweet).encode('utf-8'))
+        click.echo(self.formatter.format(format_string,
+                                         created_at,
+                                         from_now=from_now(created_at),
+                                         **tweet))
 
     def _print_tweets(self, tweets):
         for tweet in tweets:
@@ -356,10 +357,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             tweet['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print(self.formatter.format(format_string,
-                                    created_at,
-                                    from_now=from_now(created_at),
-                                    **tweet).encode('utf-8'))
+        click.echo(self.formatter.format(format_string,
+                                         created_at,
+                                         from_now=from_now(created_at),
+                                         **tweet))
 
     def _print_searches(self, tweets):
         for tweet in tweets:
@@ -373,10 +374,10 @@ class TwitterCommands(object):
         created_at = datetime.strptime(
             message['created_at'],
             '%a %b %d %H:%M:%S +0000 %Y')
-        print(self.formatter.format(format_string,
-                                    created_at,
-                                    from_now=from_now(created_at),
-                                    **message).encode('utf-8'))
+        click.echo(self.formatter.format(format_string,
+                                         created_at,
+                                         from_now=from_now(created_at),
+                                         **message))
 
     def _print_messages(self, messages):
         for message in messages:
@@ -473,11 +474,11 @@ class TwitterCommands(object):
 
     def follow(self):
         user = self.api.CreateFriendship(self.args.user)
-        print('You have requested to follow @%s' % user.screen_name)
+        click.echo('You have requested to follow @%s' % user.screen_name)
 
     def unfollow(self):
         user = self.api.DestroyFriendship(self.args.user)
-        print('You have unfollowed @%s' % user.screen_name)
+        click.echo('You have unfollowed @%s' % user.screen_name)
 
     def faves(self):
         tweets = self.api.GetFavorites(screen_name=self.args.user)
@@ -486,7 +487,6 @@ class TwitterCommands(object):
     def search(self):
         term = ' '.join(self.args.term)
         # convert to unicode
-        term = term.decode('utf-8')
         tweets = self.api.GetSearch(term=term)
         self._print_searches(tweets)
 
@@ -642,7 +642,7 @@ def choose_config_name(default, config):
         if not name:
             name = default
         if name in config.list_accounts():
-            print('Cannot create config "{name}": config exists'.format(name=name), file=sys.stderr)
+            click.echo('Cannot create config "{name}": config exists'.format(name=name), file=sys.stderr)
         elif name:
             break
 
@@ -705,12 +705,12 @@ def cmd():
     try:
         status = main()
     except twitter.TwitterError as err:
-        print('Twitter Error: {0}'.format(err.message),
-              file=sys.stderr)
+        click.echo('Twitter Error: {0}'.format(err.message),
+                   file=sys.stderr)
         status = 1
     except AuthorizationError as err:
-        print('Authorization Error: {0}'.format(err.message),
-              file=sys.stderr)
+        click.echo('Authorization Error: {0}'.format(err.message),
+                   file=sys.stderr)
         status = 2
     except KeyboardInterrupt:
         status = 3
