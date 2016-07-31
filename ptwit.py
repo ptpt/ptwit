@@ -43,13 +43,6 @@ __license__ = 'MIT'
 __copyright__ = 'Copyright (c) 2012-2015 Tao Peng'
 
 
-# Python 2/3
-try:
-    input = raw_input
-except NameError:
-    pass
-
-
 MAX_COUNT = 200
 
 CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
@@ -100,22 +93,25 @@ class AuthorizationError(Exception):
 
 def oauthlib_fetch_access_token(client_key, client_secret):
     """Fetch twitter access token using oauthlib."""
+
     # fetch request token
     oauth = OAuth1Session(client_key, client_secret=client_secret)
     fetch_response = oauth.fetch_request_token(REQUEST_TOKEN_URL)
     resource_owner_key = fetch_response.get('oauth_token')
     resource_owner_secret = fetch_response.get('oauth_token_secret')
+
     # authorization
     authorization_url = oauth.authorization_url(AUTHORIZATION_URL)
-    click.echo('Opening: ', authorization_url)
+    click.echo('Opening {0}'.format(authorization_url))
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
-    pincode = input('Enter the pincode: ')
+    pincode = click.prompt('Enter the pincode')
     oauth = OAuth1Session(client_key,
                           client_secret=client_secret,
                           resource_owner_key=resource_owner_key,
                           resource_owner_secret=resource_owner_secret,
                           verifier=pincode)
+
     # fetch access token
     oauth_tokens = oauth.fetch_access_token(ACCESS_TOKEN_URL)
     return oauth_tokens.get('oauth_token'), oauth_tokens.get('oauth_token_secret')
@@ -123,8 +119,10 @@ def oauthlib_fetch_access_token(client_key, client_secret):
 
 def oauth2_fetch_access_token(consumer_key, consumer_secret):
     """Fetch twitter access token using oauth2."""
+
     oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
     oauth_client = oauth2.Client(oauth_consumer)
+
     # get request token
     resp, content = oauth_client.request(REQUEST_TOKEN_URL)
     if resp['status'] != '200':
@@ -132,6 +130,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
             'Invalid respond from Twitter requesting temp token: {0}'.format(resp['status'])
         )
     request_token = dict(parse_qsl(content))
+
     # authorization
     authorization_url = '{url}?oauth_token={token}'.format(
         url=AUTHORIZATION_URL,
@@ -139,7 +138,8 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
     click.echo('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
-    pincode = input('Enter the pincode: ')
+    pincode = click.prompt('Enter the pincode')
+
     # fetch access token
     token = oauth2.Token(request_token['oauth_token'],
                          request_token['oauth_token_secret'])
@@ -539,7 +539,7 @@ def choose_config_name(default, config):
 
     while True:
         try:
-            name = input('Enter a config name (%s): ' % default).strip()
+            name = click.prompt('Enter a config name', default=default).strip()
         except KeyboardInterrupt:
             sys.exit(10)
         if not name:
@@ -560,8 +560,8 @@ def login(config, account):
     token_key = config.get('token_key', account=account)
     token_secret = config.get('token_secret', account=account)
     if not (consumer_key and consumer_secret):
-        consumer_key = input('Consumer key: ').strip()
-        consumer_secret = input('Consumer secret: ').strip()
+        consumer_key = click.prompt('Consumer key').strip()
+        consumer_secret = click.prompt('Consumer secret', hidden=True).strip()
     if not (token_key and token_secret):
         token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
     api = twitter.Api(consumer_key=consumer_key,
@@ -588,6 +588,7 @@ def login(config, account):
 
 def main(argv=None):
     """Parse arguments and issue commands."""
+
     if argv is None:
         argv = sys.argv[1:]
     args = parse_args(argv)
