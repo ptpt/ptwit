@@ -3,32 +3,50 @@
 
 from __future__ import division, print_function
 
+import sys
+import os
+import time
+import argparse
+from datetime import datetime
+from string import Formatter
+import webbrowser
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
+
+try:
+    # Python 2
+    from HTMLParser import HTMLParser
+    _parser = HTMLParser()
+
+    def html_unescape(value):
+        return _parser.unescape(value)
+
+except ImportError:
+    # Python 3
+    from html import unescape as html_unescape
+
+try:
+    from urlparse import parse_qsl
+except ImportError:
+    from urllib.parse import parse_qsl
+
+import twitter
+
+
 __version__ = '0.0.9'
 __author__ = 'Tao Peng'
 __license__ = 'MIT'
 __copyright__ = 'Copyright (c) 2012-2015 Tao Peng'
 
-import sys
-import os
-import time
-import argparse
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
-try:
-    from HTMLParser import HTMLParser
-except ImportError:
-    import html.parser as HTMLParser
-from datetime import datetime
-from string import Formatter
-try:
-    from urlparse import parse_qsl
-except ImportError:
-    from urllib.parse import parse_qsl
-import webbrowser
 
-import twitter
+# Python 2/3
+try:
+    input = raw_input
+except NameError:
+    pass
 
 
 MAX_COUNT = 200
@@ -91,7 +109,7 @@ def oauthlib_fetch_access_token(client_key, client_secret):
     print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
-    pincode = raw_input('Enter the pincode: ')
+    pincode = input('Enter the pincode: ')
     oauth = OAuth1Session(client_key,
                           client_secret=client_secret,
                           resource_owner_key=resource_owner_key,
@@ -120,7 +138,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
     print('Opening: ', authorization_url)
     webbrowser.open_new_tab(authorization_url)
     time.sleep(1)
-    pincode = raw_input('Enter the pincode: ')
+    pincode = input('Enter the pincode: ')
     # fetch access token
     token = oauth2.Token(request_token['oauth_token'],
                          request_token['oauth_token_secret'])
@@ -183,7 +201,11 @@ class PtwitConfig(object):
         if not os.path.exists(self.filename):
             open(self.filename, 'w').close()
         with open(self.filename) as fp:
-            self.config.readfp(fp)
+            # Python 2/3
+            if hasattr(self.config, 'read_file'):
+                self.config.read_file(fp)
+            else:
+                self.config.readfp(fp)
 
     def get(self, option, account=None, default=None):
         section = account or 'general'
@@ -282,7 +304,6 @@ class ConfigCommands(object):
 
 
 class TwitterCommands(object):
-    html_parser = HTMLParser()
     formatter = DefaultFormatter()
 
     def __init__(self, api, args, config, account):
@@ -310,7 +331,7 @@ class TwitterCommands(object):
 
     def _print_tweet(self, tweet):
         tweet = tweet.AsDict()
-        tweet['text'] = self.html_parser.unescape(tweet['text'])
+        tweet['text'] = html_unescape(tweet['text'])
         format_string = self.args.format or \
             self.config.get('tweet_format', account=self.account) or \
             FORMAT_TWEET
@@ -328,7 +349,7 @@ class TwitterCommands(object):
 
     def _print_search(self, tweet):
         tweet = tweet.AsDict()
-        tweet['text'] = self.html_parser.unescape(tweet['text'])
+        tweet['text'] = html_unescape(tweet['text'])
         format_string = self.args.format or \
             self.config.get('search_format', account=self.account) or \
             FORMAT_SEARCH
@@ -615,7 +636,7 @@ def choose_config_name(default, config):
 
     while True:
         try:
-            name = raw_input('Enter a config name (%s): ' % default).strip()
+            name = input('Enter a config name (%s): ' % default).strip()
         except KeyboardInterrupt:
             sys.exit(10)
         if not name:
@@ -636,8 +657,8 @@ def login(config, account):
     token_key = config.get('token_key', account=account)
     token_secret = config.get('token_secret', account=account)
     if not (consumer_key and consumer_secret):
-        consumer_key = raw_input('Consumer key: ').strip()
-        consumer_secret = raw_input('Consumer secret: ').strip()
+        consumer_key = input('Consumer key: ').strip()
+        consumer_secret = input('Consumer secret: ').strip()
     if not (token_key and token_secret):
         token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
     api = twitter.Api(consumer_key=consumer_key,
