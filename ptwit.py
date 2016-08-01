@@ -197,12 +197,13 @@ class TwitterConfig(object):
         if not os.path.exists(self.filename):
             open(self.filename, 'w').close()
 
-        with open(self.filename) as fp:
-            # Python 2/3
-            if hasattr(self.config, 'read_file'):
-                self.config.read_file(fp)
-            else:
-                self.config.readfp(fp)
+        if os.path.isfile(self.filename):
+            with open(self.filename) as fp:
+                # Python 2/3
+                if hasattr(self.config, 'read_file'):
+                    self.config.read_file(fp)
+                else:
+                    self.config.readfp(fp)
 
     def get(self, option, account=None, default=None):
         section = account or self.general_section
@@ -596,7 +597,7 @@ def _login(config, account=None):
 
     if not (consumer_key and consumer_secret):
         consumer_key = click.prompt('Consumer key').strip()
-        consumer_secret = click.prompt('Consumer secret', hidden=True).strip()
+        consumer_secret = click.prompt('Consumer secret', hide_input=True).strip()
         assert consumer_key and consumer_secret
 
     if not config.get('consumer_key'):
