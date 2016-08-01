@@ -8,7 +8,6 @@ import os
 from functools import update_wrapper
 from datetime import datetime
 from string import Formatter
-import webbrowser
 
 try:
     import ConfigParser
@@ -99,7 +98,7 @@ def oauthlib_fetch_access_token(client_key, client_secret):
     # Authorization
     authorization_url = oauth.authorization_url(AUTHORIZATION_URL)
     click.echo('Opening {0}'.format(authorization_url))
-    webbrowser.open_new_tab(authorization_url)
+    click.launch(authorization_url)
     pincode = click.prompt('Enter the pincode')
     oauth = OAuth1Session(client_key,
                           client_secret=client_secret,
@@ -131,7 +130,7 @@ def oauth2_fetch_access_token(consumer_key, consumer_secret):
         url=AUTHORIZATION_URL,
         token=request_token['oauth_token'])
     click.echo('Opening: ', authorization_url)
-    webbrowser.open_new_tab(authorization_url)
+    click.launch(authorization_url)
     pincode = click.prompt('Enter the pincode')
 
     # Fetch access token
