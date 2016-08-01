@@ -3,8 +3,8 @@
 
 from __future__ import (division, print_function)
 
-import sys
 import os
+import sys
 from functools import update_wrapper
 from datetime import datetime
 from string import Formatter
@@ -28,7 +28,7 @@ try:
 except ImportError:
     from urllib.parse import parse_qsl
 
-import twitter as twitter_api
+import twitter
 import click
 
 
@@ -108,6 +108,7 @@ def oauthlib_fetch_access_token(client_key, client_secret):
 
     # Fetch access token
     oauth_tokens = oauth.fetch_access_token(ACCESS_TOKEN_URL)
+
     return oauth_tokens.get('oauth_token'), oauth_tokens.get('oauth_token_secret')
 
 
@@ -193,7 +194,7 @@ class TwitterConfig(object):
         self.filename = filename
         self.config = ConfigParser.RawConfigParser()
 
-        # create file if not exists
+        # TODO: remove it
         if not os.path.exists(self.filename):
             open(self.filename, 'w').close()
 
@@ -245,14 +246,19 @@ class TwitterConfig(object):
 @click.option('--account')
 @click.option('--format')
 @click.pass_context
-def twitter(ctx, account, format):
+def ptwit(ctx, account, format):
     config = TwitterConfig(_CONFIG_FILE)
     if account is None:
-        account = config.get('default_account')
-    ctx.obj['config'] = config
-    ctx.obj['account'] = account
-    ctx.obj['format'] = format
-    ctx.obj['api'] = login(config, account)
+        account = config.get('current_account')
+
+    ctx.obj = {'config': config,
+               'account': account,
+               'format': format}
+
+    if ctx.invoked_subcommand not in ('accounts', 'login'):
+        ctx.obj['api'] = _login(config, account)
+        if not ctx.obj['api']:
+            raise click.Abort()
 
 
 def save_since_id_at(option_name):
@@ -278,11 +284,17 @@ def handle_results(*handlers):
     return wrapper
 
 
-def pass_api(func):
-    @click.pass_context
-    def new_func(ctx, *args, **kwargs):
-        return ctx.invoke(func, ctx.obj['api'], *args, **kwargs)
-    return update_wrapper(new_func, func)
+def pass_obj_args(*names):
+
+    def wrapper(func):
+        @click.pass_context
+        def new_func(ctx, *args, **kwargs):
+            preceded_args = [ctx.obj[name] for name in names]
+            args = preceded_args + list(args)
+            return ctx.invoke(func, *args, **kwargs)
+        return update_wrapper(new_func, func)
+
+    return wrapper
 
 
 def pass_since_id_from(option_name):
@@ -299,7 +311,7 @@ def pass_since_id_from(option_name):
     return wrapper
 
 
-formatter = DefaultFormatter()
+_formatter = DefaultFormatter()
 
 
 def parse_time(entry):
@@ -311,10 +323,10 @@ def print_tweet(ctx, tweet):
     tweet['text'] = html_unescape(tweet['text'])
     created_at = parse_time(tweet['created_at'])
     format_string = FORMAT_TWEET
-    click.echo(formatter.format(format_string,
-                                created_at,
-                                time_ago=time_ago(created_at),
-                                **tweet))
+    click.echo(_formatter.format(format_string,
+                                 created_at,
+                                 time_ago=time_ago(created_at),
+                                 **tweet))
 
 
 def print_tweets(ctx, tweets):
@@ -326,10 +338,10 @@ def print_user(ctx, user):
     user = user.AsDict()
     created_at = parse_time(user['created_at'])
     format_string = FORMAT_USER
-    click.echo(formatter.format(format_string,
-                                created_at,
-                                time_ago=time_ago(created_at),
-                                **user))
+    click.echo(_formatter.format(format_string,
+                                 created_at,
+                                 time_ago=time_ago(created_at),
+                                 **user))
 
 
 def print_users(ctx, users):
@@ -342,10 +354,10 @@ def print_search(ctx, tweet):
     tweet['text'] = html_unescape(tweet['text'])
     created_at = parse_time(tweet['created_at'])
     format_string = FORMAT_SEARCH
-    click.echo(formatter.format(format_string,
-                                created_at,
-                                time_ago=time_ago(created_at),
-                                **tweet))
+    click.echo(_formatter.format(format_string,
+                                 created_at,
+                                 time_ago=time_ago(created_at),
+                                 **tweet))
 
 
 def print_searches(ctx, searches):
@@ -357,10 +369,10 @@ def print_message(ctx, message):
     message = message.AsDict()
     created_at = parse_time(message['created_at'])
     format_string = FORMAT_MESSAGE
-    click.echo(formatter.format(format_string,
-                                created_at,
-                                time_ago=time_ago(created_at),
-                                **message))
+    click.echo(_formatter.format(format_string,
+                                 created_at,
+                                 time_ago=time_ago(created_at),
+                                 **message))
 
 
 def print_messages(ctx, messages):
@@ -368,151 +380,201 @@ def print_messages(ctx, messages):
         print_message(ctx, message)
 
 
-@twitter.command()
-@click.argument('text', type=click.File('rb'))
+def read_text(words):
+    if len(words) == 1 and words[0] == '-':
+        text = click.get_text_stream('stdin').read()
+    elif words:
+        text = ' '.join(words)
+        if not click.confirm('Post "{0}"?'.format(text)):
+            return ''
+    else:
+        text = click.edit()
+
+    return text
+
+
+@ptwit.command()
+@click.argument('words', nargs=-1)
 @handle_results(print_tweet)
-@pass_api
-def post(api, text):
+@pass_obj_args('api')
+def post(api, words):
+    """Post a tweet."""
+    text = read_text(words)
+    if not text.strip():
+        raise click.Abort()
     return api.PostUpdate(text)
 
 
-@twitter.command()
-@click.option('--count', default=_MAX_COUNT, type=click.INT)
+@ptwit.command()
+@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
 @click.argument('user')
 @handle_results(print_tweets)
-@pass_api
+@pass_obj_args('api')
 def tweets(api, user, count=None):
+    """List tweets of a user."""
     return api.GetUserTimeline(screen_name=user, count=count)
 
 
-@twitter.command()
-@click.option('--count', default=_MAX_COUNT, type=click.INT)
+@ptwit.command()
+@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
 @handle_results(print_tweets, save_since_id_at('timeline_since_id'))
 @pass_since_id_from('timeline_since_id')
-@pass_api
+@pass_obj_args('api')
 def timeline(api, count=None, since_id=None):
-    if count is not None:
-        since_id = None
+    """List timeline."""
     return api.GetHomeTimeline(count=count, since_id=since_id)
 
 
-@twitter.command()
-@click.option('--count', default=_MAX_COUNT, type=click.INT)
+@ptwit.command()
+@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
 @handle_results(print_tweets, save_since_id_at('mentions_since_id'))
 @pass_since_id_from('mentions_since_id')
-@pass_api
+@pass_obj_args('api')
 def mentions(api, count=None, since_id=None):
-    if count is not None:
-        since_id = None
+    """List mentions."""
     return api.GetMentions(count=count, since_id=since_id)
 
 
-@twitter.command()
-@click.option('--count', default=_MAX_COUNT, type=click.INT)
+@ptwit.command()
+@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
 @handle_results(print_tweets, save_since_id_at('replies_since_id'))
 @pass_since_id_from('replies_since_id')
-@pass_api
+@pass_obj_args('api')
 def replies(api, count=None, since_id=None):
-    if count is not None:
-        since_id = None
+    """List replies."""
     return api.GetReplies(count=count, since_id=since_id)
 
 
-@twitter.command()
-@click.option('--count', default=_MAX_COUNT, type=click.INT)
+@ptwit.command()
+@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
 @handle_results(print_messages, save_since_id_at('messages_since_id'))
 @pass_since_id_from('messages_since_id')
-@pass_api
+@pass_obj_args('api')
 def messages(api, count=None, since_id=None):
-    if count is not None:
-        since_id = None
+    """List messages."""
     return api.GetDirectMessages(count=count, since_id=since_id)
 
 
-@twitter.command()
+@ptwit.command()
 @click.argument('user')
-@click.argument('text', type=click.File('rb'))
-@pass_api
-def send(api, user, text):
+@click.argument('words', nargs=-1)
+@pass_obj_args('api')
+def send(api, user, words):
+    """Send a message to a user."""
+    text = read_text(words)
+    if not text.strip():
+        raise click.Abort()
     return api.PostDirectMessage(text, screen_name=user)
 
 
-@twitter.command()
+@ptwit.command()
 @click.argument('user')
 @handle_results(print_users)
-@pass_api
+@pass_obj_args('api')
 def followings(api, user):
+    """List who you are following."""
     return api.GetFriends(user)
 
 
-@twitter.command()
+@ptwit.command()
 @click.argument('user')
 @handle_results(print_users)
-@pass_api
+@pass_obj_args('api')
 def followers(api, user):
+    """List your followers."""
     return api.GetFollowers(user)
 
 
-@twitter.command()
+@ptwit.command()
 @click.argument('user')
-@pass_api
+@handle_results(print_user)
+@pass_obj_args('api')
 def follow(api, user):
-    user = api.CreateFriendship(user)
-    click.echo('You have requested to follow @%s' % user.screen_name)
+    """Follow a user."""
+    return api.CreateFriendship(user)
 
 
-@twitter.command()
+@ptwit.command()
 @click.argument('user')
-@pass_api
+@handle_results(print_user)
+@pass_obj_args('api')
 def unfollow(api, user):
-    user = api.DestroyFriendship(user)
-    click.echo('You have unfollowed @%s' % user.screen_name)
+    """Unfollow a user."""
+    return api.DestroyFriendship(user)
 
 
-@twitter.command()
+@ptwit.command()
 @click.argument('user')
 @handle_results(print_tweets)
-@pass_api
+@pass_obj_args('api')
 def faves(api, user):
+    """List favourite tweets of a user."""
     return api.GetFavorites(screen_name=user)
 
 
-@twitter.command()
-@click.argument('term')
+@ptwit.command()
+@click.argument('term', nargs=-1)
 @handle_results(print_searches)
-@pass_api
+@pass_obj_args('api')
 def search(api, term):
+    """Search Twitter."""
     term = ' '.join(term).encode('utf-8')
     return api.GetSearch(term=term)
 
 
-@twitter.command()
-@click.argument('user', nargs=-1)
+@ptwit.command()
+@click.argument('users', nargs=-1)
 @handle_results(print_users)
-@pass_api
-def whois(api, user):
-    return [api.GetUser(screen_name=name) for name in user]
+@pass_obj_args('api')
+def whois(api, users):
+    """Show user profiles."""
+    return [api.GetUser(screen_name=screen_name) for screen_name in users]
 
 
-def choose_config_name(default, config):
+def print_accounts(ctx, accounts):
+    config = ctx.obj['config']
+    current_account = config.get('current_account')
+    for account in sorted(accounts):
+        if account == current_account:
+            click.echo(click.style('* {0}'.format(account), fg='red'))
+        else:
+            click.echo('  {0}'.format(account))
+
+
+@ptwit.command()
+@handle_results(print_accounts)
+@click.pass_context
+def accounts(ctx):
+    """List all accounts."""
+    return ctx.obj['config'].list_accounts()
+
+
+@ptwit.command()
+@click.argument('account')
+@pass_obj_args('config')
+def login(config, account):
+    """Log into an account."""
+    api = _login(config, account)
+    if api:
+        current_account = config.get('current_account')
+        click.echo('Switched to account "{0}"'.format(current_account))
+
+
+def choose_account_name(config, default):
     """Prompt for choosing config name."""
 
-    name = default
-
     while True:
-        try:
-            name = click.prompt('Enter a config name', default=default, show_default=True).strip()
-        except KeyboardInterrupt:
-            sys.exit(10)
+        name = click.prompt('Enter an account name', default=default, show_default=True)
+        name = name.strip()
         if name in config.list_accounts():
-            click.echo('Cannot create config "{name}": config exists'.format(name=name), err=True)
+            click.echo('Account "{0}" existed'.format(name), err=True)
         elif name:
             break
 
     return name
 
 
-def login(config, account):
+def _login(config, account=None):
     consumer_key = config.get('consumer_key', account=account) or config.get('consumer_key')
     consumer_secret = config.get('consumer_secret', account=account) or config.get('consumer_secret')
 
@@ -522,37 +584,55 @@ def login(config, account):
     if not (consumer_key and consumer_secret):
         consumer_key = click.prompt('Consumer key').strip()
         consumer_secret = click.prompt('Consumer secret', hidden=True).strip()
-
-    if not (token_key and token_secret):
-        token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
-
-    api = twitter_api.Api(consumer_key=consumer_key,
-                          consumer_secret=consumer_secret,
-                          access_token_key=token_key,
-                          access_token_secret=token_secret)
-
-    if not account:
-        user = api.VerifyCredentials()
-        account = choose_config_name(user.screen_name, config)
-        config.set('default_account', account)
+        assert consumer_key and consumer_secret
 
     if not config.get('consumer_key'):
         config.set('consumer_key', consumer_key)
-    if config.get('consumer_key', account=account):
-        config.set('consumer_key', consumer_key, account=account)
-
     if not config.get('consumer_secret'):
         config.set('consumer_secret', consumer_secret)
+
+    if not (token_key and token_secret):
+        if account:
+            msg = 'New account "{0}" found. Open a web browser to authenticate?'.format(account)
+        else:
+            msg = 'No account found. Open a web browser to authenticate?'
+
+        if click.confirm(msg, default=True):
+            token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
+        else:
+            config.save()
+            return None
+
+    api = twitter.Api(consumer_key=consumer_key,
+                      consumer_secret=consumer_secret,
+                      access_token_key=token_key,
+                      access_token_secret=token_secret)
+
+    if not account:
+        user = api.VerifyCredentials()
+        account = choose_account_name(config, user.screen_name)
+        assert account
+
+    if config.get('consumer_key', account=account):
+        config.set('consumer_key', consumer_key, account=account)
     if config.get('consumer_secret', account=account):
         config.set('consumer_secret', consumer_secret, account=account)
-
     config.set('token_key', token_key, account=account)
     config.set('token_secret', token_secret, account=account)
+    config.set('current_account', account)
 
     config.save()
 
     return api
 
 
+def main():
+    try:
+        ptwit()
+    except twitter.error.TwitterError as err:
+        click.echo('Twitter Error: {0}'.format(err), err=True)
+        sys.exit(2)
+
+
 if __name__ == '__main__':
-    twitter(obj={})
+    main()

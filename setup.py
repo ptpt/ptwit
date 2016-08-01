@@ -7,9 +7,6 @@ except ImportError:
     from distutils.core import setup
 
 
-requires = ['python-twitter>=1.0', 'click']
-
-
 def readme():
     with open('README.rst') as f:
         return f.read()
@@ -23,6 +20,7 @@ setup(name='ptwit',
           'Development Status :: 4 - Beta',
           'License :: OSI Approved :: MIT License',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.5',
           'Environment :: Console',
           'Intended Audience :: End Users/Desktop',
           'Topic :: Utilities'],
@@ -32,7 +30,9 @@ setup(name='ptwit',
       keywords='twitter, command-line, client',
       license='MIT',
       py_modules=['ptwit'],
-      install_requires=requires,
-      entry_points={
-          'console_scripts': ['ptwit=ptwit:cmd']},
+      install_requires=['python-twitter>=1.0', 'click==6.6'],
+      entry_points='''
+      [console_scripts]
+      ptwit=ptwit:main
+      ''',
       zip_safe=False)
