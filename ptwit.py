@@ -5,6 +5,7 @@ from __future__ import (division, print_function)
 
 import os
 import sys
+import errno
 from functools import update_wrapper
 from datetime import datetime
 from string import Formatter
@@ -39,8 +40,6 @@ __copyright__ = 'Copyright (c) 2012-2016 Tao Peng'
 
 
 _MAX_COUNT = 200
-
-_CONFIG_FILE = os.path.expanduser('~/.ptwitrc')
 
 FORMAT_TWEET = u'''\t\033[7m {user[name]} \033[0m (@{user[screen_name]})
 \t{text}
@@ -242,12 +241,26 @@ class TwitterConfig(object):
             self.config.write(fp)
 
 
+# http://stackoverflow.com/a/600612/114833
+def mkdir(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
 @click.group()
 @click.option('--account')
 @click.option('--format')
 @click.pass_context
 def ptwit(ctx, account, format):
-    config = TwitterConfig(_CONFIG_FILE)
+    config_dir = click.get_app_dir('ptwit')
+    mkdir(config_dir)
+    config = TwitterConfig(os.path.join(config_dir, 'ptwit.conf'))
+
     if account is None:
         account = config.get('current_account')
 
