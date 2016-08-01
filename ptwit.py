@@ -197,13 +197,15 @@ class TwitterConfig(object):
         if not os.path.exists(self.filename):
             open(self.filename, 'w').close()
 
-        if os.path.isfile(self.filename):
+        try:
             with open(self.filename) as fp:
                 # Python 2/3
                 if hasattr(self.config, 'read_file'):
                     self.config.read_file(fp)
                 else:
                     self.config.readfp(fp)
+        except IOError:
+            pass
 
     def get(self, option, account=None, default=None):
         section = account or self.general_section
