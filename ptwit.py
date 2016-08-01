@@ -432,32 +432,44 @@ def tweets(api, user, count=None):
 
 
 @ptwit.command()
-@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
+@click.option('--count', '-c', type=click.INT)
 @handle_results(print_tweets, save_since_id_at('timeline_since_id'))
 @pass_since_id_from('timeline_since_id')
 @pass_obj_args('api')
 def timeline(api, count=None, since_id=None):
     """List timeline."""
+    if count is None:
+        count = _MAX_COUNT
+    else:
+        since_id = None
     return api.GetHomeTimeline(count=count, since_id=since_id)
 
 
 @ptwit.command()
-@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
+@click.option('--count', '-c', type=click.INT)
 @handle_results(print_tweets, save_since_id_at('mentions_since_id'))
 @pass_since_id_from('mentions_since_id')
 @pass_obj_args('api')
 def mentions(api, count=None, since_id=None):
     """List mentions."""
+    if count is None:
+        count = _MAX_COUNT
+    else:
+        since_id = None
     return api.GetMentions(count=count, since_id=since_id)
 
 
 @ptwit.command()
-@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
+@click.option('--count', '-c', type=click.INT)
 @handle_results(print_tweets, save_since_id_at('replies_since_id'))
 @pass_since_id_from('replies_since_id')
 @pass_obj_args('api')
 def replies(api, count=None, since_id=None):
     """List replies."""
+    if count is None:
+        count = _MAX_COUNT
+    else:
+        since_id = None
     return api.GetReplies(count=count, since_id=since_id)
 
 
@@ -468,6 +480,10 @@ def replies(api, count=None, since_id=None):
 @pass_obj_args('api')
 def messages(api, count=None, since_id=None):
     """List messages."""
+    if count is None:
+        count = _MAX_COUNT
+    else:
+        since_id = None
     return api.GetDirectMessages(count=count, since_id=since_id)
 
 
