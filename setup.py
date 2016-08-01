@@ -30,7 +30,7 @@ setup(name='ptwit',
       keywords='twitter, command-line, client',
       license='MIT',
       py_modules=['ptwit'],
-      install_requires=['python-twitter>=1.0', 'click==6.6'],
+      install_requires=['python-twitter==3.1', 'click==6.6', 'click-default-group==1.2'],
       entry_points='''
       [console_scripts]
       ptwit=ptwit:main

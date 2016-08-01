@@ -31,6 +31,7 @@ except ImportError:
 
 import twitter
 import click
+from click_default_group import DefaultGroup
 
 
 __version__ = '0.0.9'
@@ -255,7 +256,7 @@ def mkdir(path):
             raise
 
 
-@click.group()
+@click.group(cls=DefaultGroup, default='timeline', default_if_no_args=True)
 @click.option('--account')
 @click.option('--format')
 @click.pass_context
