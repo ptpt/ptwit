@@ -47,7 +47,7 @@ FORMAT_TWEET = '''\t{_username_} @{user[screen_name]}
 \t{_time_ago_}
 '''
 
-FORMAT_RETWEET = '''\t{_username_} @{user[screen_name]} ({_origin_screen_name_} Retweeted)
+FORMAT_RETWEET = '''\t{_username_} @{user[screen_name]} ({_first_username_} Retweeted)
 \t{_aligned_text_}
 \t{_time_ago_}
 '''
@@ -301,12 +301,10 @@ def align_text(text, margin='', skip_first_line=False):
 def format_tweet_as_text(tweet):
     tweet = tweet.AsDict()
     assert not any(key[0] == '_' and key[-1] == '_' for key in tweet.keys())
-    if 'retweeted_status' in tweet:
-        retweet = tweet['retweeted_status']
-        retweet['_origin_screen_name_'] = tweet['user']['name']
+    retweet = tweet.get('retweeted_status')
+    if retweet:
+        retweet['_first_username_'] = tweet['user']['name']
         tweet = retweet
-    else:
-        retweet = None
 
     username = tweet['user']['name']
     tweet['_username_'] = click.style(' ' + username + ' ', bg='black', fg='white')
@@ -315,7 +313,7 @@ def format_tweet_as_text(tweet):
     text = html_unescape(tweet['text'])
     tweet['_aligned_text_'] = align_text(text, margin='\t', skip_first_line=True)
 
-    return _formatter.format(FORMAT_RETWEET if retweet is not None else FORMAT_TWEET,
+    return _formatter.format(FORMAT_RETWEET if retweet else FORMAT_TWEET,
                              created_at,
                              **tweet)
 
