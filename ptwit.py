@@ -434,12 +434,18 @@ def post(api, words):
 
 @ptwit.command()
 @click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
-@click.argument('user')
+@click.argument('users', nargs=-1)
 @handle_results(print_tweets)
 @pass_obj_args('api')
-def tweets(api, user, count=None):
-    """List tweets of a user."""
-    return api.GetUserTimeline(screen_name=user, count=count)
+def tweets(api, users, count=None):
+    """List user's tweets."""
+    if not users:
+        users = [api.VerifyCredentials().screen_name]
+
+    tweets = []
+    for user in users:
+        tweets += api.GetUserTimeline(screen_name=user, count=count)
+    return tweets
 
 
 @ptwit.command()
