@@ -33,6 +33,7 @@ except ImportError:
 import twitter
 import click
 from click_default_group import DefaultGroup
+from requests_oauthlib import OAuth1Session
 
 
 __version__ = '0.0.9'
@@ -84,7 +85,7 @@ class AuthorizationError(Exception):
     pass
 
 
-def oauthlib_fetch_access_token(client_key, client_secret):
+def fetch_access_token(client_key, client_secret):
     """Fetch twitter access token using oauthlib."""
 
     # Fetch request token
@@ -108,51 +109,6 @@ def oauthlib_fetch_access_token(client_key, client_secret):
     oauth_tokens = oauth.fetch_access_token(ACCESS_TOKEN_URL)
 
     return oauth_tokens.get('oauth_token'), oauth_tokens.get('oauth_token_secret')
-
-
-def oauth2_fetch_access_token(consumer_key, consumer_secret):
-    """Fetch twitter access token using oauth2."""
-
-    oauth_consumer = oauth2.Consumer(key=consumer_key, secret=consumer_secret)
-    oauth_client = oauth2.Client(oauth_consumer)
-
-    # Get request token
-    resp, content = oauth_client.request(REQUEST_TOKEN_URL)
-    if resp['status'] != '200':
-        raise AuthorizationError(
-            'Invalid respond from Twitter requesting temp token: {0}'.format(resp['status'])
-        )
-    request_token = dict(parse_qsl(content))
-
-    # Authorization
-    authorization_url = '{url}?oauth_token={token}'.format(
-        url=AUTHORIZATION_URL,
-        token=request_token['oauth_token'])
-    click.echo('Opening: ', authorization_url)
-    click.launch(authorization_url)
-    pincode = click.prompt('Enter the pincode')
-
-    # Fetch access token
-    token = oauth2.Token(request_token['oauth_token'],
-                         request_token['oauth_token_secret'])
-    token.set_verifier(pincode)
-    oauth_client = oauth2.Client(oauth_consumer, token)
-    resp, content = oauth_client.request(ACCESS_TOKEN_URL,
-                                         method='POST',
-                                         body='oauth_verifier=%s' % pincode)
-    access_token = dict(parse_qsl(content))
-    if resp['status'] != '200':
-        raise AuthorizationError('The request for a Token did not succeed: {0}'.format(resp['status']))
-    else:
-        return access_token['oauth_token'], access_token['oauth_token_secret']
-
-
-try:
-    import oauth2 as oauth2
-    fetch_access_token = oauth2_fetch_access_token
-except ImportError:
-    from requests_oauthlib import OAuth1Session
-    fetch_access_token = oauthlib_fetch_access_token
 
 
 def time_ago(time):
