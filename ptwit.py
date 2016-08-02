@@ -42,17 +42,22 @@ PY2 = sys.version_info[0] == 2
 
 MAX_COUNT = 200
 
-FORMAT_TWEET = u'''\t{_username_} (@{user[screen_name]})
+FORMAT_TWEET = '''\t{_username_} @{user[screen_name]}
 \t{_aligned_text_}
 \t{_time_ago_}
 '''
 
-FORMAT_MESSAGE = u'''\t{_sender_screen_name_}
+FORMAT_RETWEET = '''\t{_username_} @{user[screen_name]} ({_origin_screen_name_} Retweeted)
 \t{_aligned_text_}
 \t{_time_ago_}
 '''
 
-FORMAT_USER = u'''\t{_username_} (@{screen_name})
+FORMAT_MESSAGE = '''\t{_sender_screen_name_}
+\t{_aligned_text_}
+\t{_time_ago_}
+'''
+
+FORMAT_USER = '''\t{_username_} (@{screen_name})
 \tLocation:     {location}
 \tURL:          {url}
 \tFollowers:    {followers_count}
@@ -296,6 +301,12 @@ def align_text(text, margin='', skip_first_line=False):
 def format_tweet_as_text(tweet):
     tweet = tweet.AsDict()
     assert not any(key[0] == '_' and key[-1] == '_' for key in tweet.keys())
+    if 'retweeted_status' in tweet:
+        retweet = tweet['retweeted_status']
+        retweet['_origin_screen_name_'] = tweet['user']['name']
+        tweet = retweet
+    else:
+        retweet = None
 
     username = tweet['user']['name']
     tweet['_username_'] = click.style(' ' + username + ' ', bg='black', fg='white')
@@ -304,7 +315,9 @@ def format_tweet_as_text(tweet):
     text = html_unescape(tweet['text'])
     tweet['_aligned_text_'] = align_text(text, margin='\t', skip_first_line=True)
 
-    return _formatter.format(FORMAT_TWEET, created_at, **tweet)
+    return _formatter.format(FORMAT_RETWEET if retweet is not None else FORMAT_TWEET,
+                             created_at,
+                             **tweet)
 
 
 def format_tweet_as_json(tweet):
