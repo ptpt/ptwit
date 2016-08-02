@@ -19,7 +19,9 @@ setup(name='ptwit',
       classifiers=[
           'Development Status :: 4 - Beta',
           'License :: OSI Approved :: MIT License',
+          'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.5',
           'Environment :: Console',
           'Intended Audience :: End Users/Desktop',
@@ -30,7 +32,7 @@ setup(name='ptwit',
       keywords='twitter, command-line, client',
       license='MIT',
       py_modules=['ptwit'],
-      install_requires=['python-twitter==3.1', 'click==6.6', 'click-default-group==1.2'],
+      install_requires=['python-twitter', 'click-default-group', 'click'],
       entry_points='''
       [console_scripts]
       ptwit=ptwit:main
