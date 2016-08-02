@@ -10,7 +10,6 @@ from functools import update_wrapper
 from datetime import datetime
 from string import Formatter
 import json
-import functools
 
 try:
     import ConfigParser
@@ -161,11 +160,16 @@ def time_ago(time):
 
     diff = datetime.utcnow() - time
 
-    # -999999999 <= days <= 999999999
-    if diff.days == 1:
+    years = diff.days // 365
+    if years == 1:
+        return '1 year ago'
+    elif 1 < years:
+        return '{0} years ago'.format(years)
+
+    elif diff.days == 1:
         return '1 day ago'
-    elif diff.days > 1:
-        return '%d days ago' % diff.days
+    elif 1 < diff.days:
+        return '{0} days ago'.format(diff.days)
 
     # Equivalent to (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
     # Negative value means the time is in the future
@@ -178,12 +182,12 @@ def time_ago(time):
     elif diff.seconds // 60 == 1:
         return '1 minute ago'
     elif diff.seconds < 3600:
-        return '%d minutes ago' % (diff.seconds // 60)
+        return '{0} minutes ago'.format(diff.seconds // 60)
 
     elif diff.seconds // 3600 == 1:
         return '1 hour ago'
     else:
-        return '%d hours ago' % (diff.seconds // 3600)
+        return '{0} hours ago'.format(diff.seconds // 3600)
 
 
 class TwitterConfig(object):
