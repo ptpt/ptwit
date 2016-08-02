@@ -42,12 +42,12 @@ PY2 = sys.version_info[0] == 2
 MAX_COUNT = 200
 
 FORMAT_TWEET = u'''\t{_username_} (@{user[screen_name]})
-\t{text}
+\t{_aligned_text_}
 \t{_time_ago_}
 '''
 
 FORMAT_MESSAGE = u'''\t{_sender_screen_name_}
-\t{text}
+\t{_aligned_text_}
 \t{_time_ago_}
 '''
 
@@ -57,7 +57,7 @@ FORMAT_USER = u'''\t{_username_} (@{screen_name})
 \tFollowers:    {followers_count}
 \tFollowing:    {friends_count}
 \tStatus:       {statuses_count}
-\tDescription:  {description}
+\tDescription:  {_aligned_description_}
 \tJoined:       {0:%Y-%m-%d} ({_time_ago_})
 '''
 
@@ -278,6 +278,13 @@ def parse_time(entry):
     return datetime.strptime(entry, '%a %b %d %H:%M:%S +0000 %Y')
 
 
+def align_text(text, margin='', skip_first_line=False):
+    lines = text.splitlines()
+    aligned_lines = [line if (skip_first_line and n == 0) else (margin + line)
+                     for n, line in enumerate(lines)]
+    return '\n'.join(aligned_lines)
+
+
 def format_tweet_as_text(tweet):
     tweet = tweet.AsDict()
     assert not any(key[0] == '_' and key[-1] == '_' for key in tweet.keys())
@@ -286,7 +293,8 @@ def format_tweet_as_text(tweet):
     tweet['_username_'] = click.style(' ' + username + ' ', bg='black', fg='white')
     created_at = parse_time(tweet['created_at'])
     tweet['_time_ago_'] = click.style(time_ago(created_at), fg='red')
-    tweet['text'] = html_unescape(tweet['text'])
+    text = html_unescape(tweet['text'])
+    tweet['_aligned_text_'] = align_text(text, margin='\t', skip_first_line=True)
 
     return _formatter.format(FORMAT_TWEET, created_at, **tweet)
 
@@ -325,6 +333,10 @@ def format_user_as_text(user):
     created_at = parse_time(user['created_at'])
     user['_username_'] = click.style(' ' + user['name'] + ' ', fg='white', bg='black')
     user['_time_ago_'] = time_ago(created_at)
+    description = user.get('description')
+    if description is not None:
+        margin = '\t' + ' ' * len('Description:  ')
+        user['_aligned_description_'] = align_text(description, margin=margin, skip_first_line=True)
 
     return _formatter.format(FORMAT_USER, created_at, **user)
 
@@ -364,6 +376,7 @@ def format_message_as_text(message):
     message['_time_ago_'] = click.style(time_ago(created_at), fg='red')
     message['_sender_screen_name_'] = click.style(' ' + message['sender_screen_name'] + ' ',
                                                   fg='white', bg='black')
+    message['_aligned_text_'] = align_text(message['text'], margin='\t', skip_first_line=True)
 
     return _formatter.format(FORMAT_MESSAGE, created_at, **message)
 
