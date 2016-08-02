@@ -47,7 +47,7 @@ a new account, or switch between accounts you've already authorized:
 Usage
 ----------------
 
-.. code-block:: bash
+.. code-block::
 
    Usage: ptwit.py [OPTIONS] COMMAND [ARGS]...
 
