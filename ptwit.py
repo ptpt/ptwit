@@ -674,7 +674,7 @@ def _login(config, account=None):
     return api
 
 
-def main():
+def cli():
     try:
         ptwit()
     except twitter.error.TwitterError as err:
@@ -683,4 +683,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    cli()

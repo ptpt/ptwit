@@ -35,6 +35,6 @@ setup(name='ptwit',
       install_requires=['python-twitter', 'click-default-group', 'click'],
       entry_points='''
       [console_scripts]
-      ptwit=ptwit:main
+      ptwit=ptwit:cli
       ''',
       zip_safe=False)
