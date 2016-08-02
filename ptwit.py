@@ -33,6 +33,7 @@ import twitter
 import click
 from click_default_group import DefaultGroup
 from requests_oauthlib import OAuth1Session
+from requests_oauthlib.oauth1_session import TokenRequestDenied
 
 
 __version__ = '0.1'
@@ -61,10 +62,6 @@ FORMAT_USER = u'''\t{_username_} (@{screen_name})
 \tJoined:       {0:%Y-%m-%d} ({_time_ago_})
 '''
 
-REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
-AUTHORIZATION_URL = 'https://api.twitter.com/oauth/authenticate'
-ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
-
 
 class DefaultFormatter(Formatter):
     def get_value(self, key, args, kwargs):
@@ -75,8 +72,12 @@ class DefaultFormatter(Formatter):
             return None
 
 
-def fetch_access_token(client_key, client_secret):
+def fetch_access_token(client_key, client_secret, trial=0):
     """Fetch twitter access token using oauthlib."""
+
+    REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
+    AUTHORIZATION_URL = 'https://api.twitter.com/oauth/authenticate'
+    ACCESS_TOKEN_URL = 'https://api.twitter.com/oauth/access_token'
 
     # Fetch request token
     oauth = OAuth1Session(client_key, client_secret=client_secret)
@@ -84,10 +85,11 @@ def fetch_access_token(client_key, client_secret):
     resource_owner_key = fetch_response.get('oauth_token')
     resource_owner_secret = fetch_response.get('oauth_token_secret')
 
-    # Authorization
     authorization_url = oauth.authorization_url(AUTHORIZATION_URL)
     click.echo('Opening {0}'.format(authorization_url))
     click.launch(authorization_url)
+
+    # Authorization
     pincode = click.prompt('Enter the pincode')
     oauth = OAuth1Session(client_key,
                           client_secret=client_secret,
@@ -96,7 +98,15 @@ def fetch_access_token(client_key, client_secret):
                           verifier=pincode)
 
     # Fetch access token
-    oauth_tokens = oauth.fetch_access_token(ACCESS_TOKEN_URL)
+    try:
+        oauth_tokens = oauth.fetch_access_token(ACCESS_TOKEN_URL)
+    except TokenRequestDenied as err:
+        if trial < 20:
+            click.echo(err, err=True)
+            return fetch_access_token(client_key, client_secret, trial=trial + 1)
+        else:
+            # Do not believe it is a typo any more
+            raise err
 
     return oauth_tokens.get('oauth_token'), oauth_tokens.get('oauth_token_secret')
 
@@ -217,8 +227,6 @@ def ptwit(ctx, account, format):
 
     if ctx.invoked_subcommand not in ('accounts', 'login'):
         ctx.obj['api'] = _login(config, account)
-        if not ctx.obj['api']:
-            raise click.Abort()
 
 
 def save_since_id_at(option_name):
@@ -606,10 +614,9 @@ def accounts(ctx):
 @pass_obj_args('config')
 def login(config, account):
     """Log into an account."""
-    api = _login(config, account)
-    if api:
-        current_account = config.get('current_account')
-        click.echo('Switched to account "{0}"'.format(current_account))
+    _login(config, account)
+    current_account = config.get('current_account')
+    click.echo('Switched to account "{0}"'.format(current_account))
 
 
 def choose_account_name(config, default):
@@ -638,30 +645,31 @@ def _login(config, account=None):
         consumer_secret = click.prompt('Consumer secret', hide_input=True).strip()
         assert consumer_key and consumer_secret
 
-    if not config.get('consumer_key'):
-        config.set('consumer_key', consumer_key)
-    if not config.get('consumer_secret'):
-        config.set('consumer_secret', consumer_secret)
-
     if not (token_key and token_secret):
         if account:
-            msg = 'New account "{0}" found. Open a web browser to authenticate?'.format(account)
+            msg = 'New account "{0}" found.'.format(account)
         else:
-            msg = 'No account found. Open a web browser to authenticate?'
-
-        if click.confirm(msg, default=True):
-            token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
-        else:
-            config.save()
-            return None
+            msg = 'No account found.'
+        msg += ' Open a web browser to authenticate?'
+        click.confirm(msg, default=True, abort=True)
+        token_key, token_secret = fetch_access_token(consumer_key, consumer_secret)
 
     api = twitter.Api(consumer_key=consumer_key,
                       consumer_secret=consumer_secret,
                       access_token_key=token_key,
                       access_token_secret=token_secret)
 
+    # We put it here to verify consumer pair and token pair
+    user = api.VerifyCredentials()
+
+    # If it's get verified, we can safely store the consumer pair
+    # globally
+    if not config.get('consumer_key'):
+        config.set('consumer_key', consumer_key)
+    if not config.get('consumer_secret'):
+        config.set('consumer_secret', consumer_secret)
+
     if not account:
-        user = api.VerifyCredentials()
         account = choose_account_name(config, user.screen_name)
         assert account
 
@@ -684,6 +692,9 @@ def cli():
     except twitter.error.TwitterError as err:
         click.echo('Twitter Error: {0}'.format(err), err=True)
         sys.exit(2)
+    except TokenRequestDenied as err:
+        click.echo(err, err=True)
+        sys.exit(3)
 
 
 if __name__ == '__main__':
