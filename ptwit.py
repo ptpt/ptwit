@@ -115,34 +115,28 @@ def time_ago(time):
 
     diff = datetime.utcnow() - time
 
-    years = diff.days // 365
-    if years == 1:
+    if 1 < diff.days // 365:
+        return '{0} years ago'.format(diff.days // 365)
+    elif 1 == diff.days // 365:
         return '1 year ago'
-    elif 1 < years:
-        return '{0} years ago'.format(years)
 
-    elif diff.days == 1:
-        return '1 day ago'
     elif 1 < diff.days:
         return '{0} days ago'.format(diff.days)
+    elif 1 == diff.days:
+        return '1 day ago'
 
-    # Equivalent to (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
-    # Negative value means the time is in the future
-    elif diff.total_seconds() < 0:
-        return 'just now'
-
-    # 0 <= seconds < 3600*24 (the number of seconds in one day)
-    elif diff.seconds < 60:
-        return 'just now'
-    elif diff.seconds // 60 == 1:
-        return '1 minute ago'
-    elif diff.seconds < 3600:
-        return '{0} minutes ago'.format(diff.seconds // 60)
-
-    elif diff.seconds // 3600 == 1:
-        return '1 hour ago'
-    else:
+    elif 1 < diff.seconds // 3600:
         return '{0} hours ago'.format(diff.seconds // 3600)
+    elif 1 == diff.seconds // 3600:
+        return '1 hour ago'
+
+    elif 1 < diff.seconds // 60:
+        return '{0} minutes ago'.format(diff.seconds // 60)
+    elif 1 == diff.seconds // 60:
+        return '1 minute ago'
+
+    else:
+        return 'just now'
 
 
 class TwitterConfig(object):
