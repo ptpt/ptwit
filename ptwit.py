@@ -35,7 +35,7 @@ from click_default_group import DefaultGroup
 from requests_oauthlib import OAuth1Session
 
 
-__version__ = '0.0.9'
+__version__ = '0.1'
 __author__ = 'Tao Peng'
 __license__ = 'MIT'
 __copyright__ = 'Copyright (c) 2012-2016 Tao Peng'
@@ -212,7 +212,7 @@ def mkdir(path):
 
 @click.group(cls=DefaultGroup, default='timeline', default_if_no_args=True)
 @click.option('--account',
-              help='Use this account instead of the default.')
+              help='Use this account instead of the default one.')
 @click.option('--text', 'format', flag_value='text', default=True,
               help='Print entries as human-readable text.')
 @click.option('--json', 'format', flag_value='json',
