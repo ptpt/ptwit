@@ -197,10 +197,6 @@ class TwitterConfig(object):
         self.filename = filename
         self.config = ConfigParser.RawConfigParser()
 
-        # TODO: remove it
-        if not os.path.exists(self.filename):
-            open(self.filename, 'w').close()
-
         try:
             with open(self.filename) as fp:
                 # Python 2/3
