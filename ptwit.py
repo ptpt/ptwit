@@ -614,6 +614,8 @@ def search(api, term):
 @pass_obj_args('api')
 def whois(api, users):
     """Show user profiles."""
+    if not users:
+        return [api.VerifyCredentials()]
     return [api.GetUser(screen_name=screen_name) for screen_name in users]
 
 
