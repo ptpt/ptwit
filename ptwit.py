@@ -19,8 +19,7 @@ except ImportError:
 try:
     # Python 2
     from HTMLParser import HTMLParser
-    _parser = HTMLParser()
-    html_unescape = _parser.unescape
+    html_unescape = HTMLParser().unescape
 except ImportError:
     # Python 3
     from html import unescape as html_unescape
