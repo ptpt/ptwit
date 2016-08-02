@@ -79,11 +79,6 @@ class DefaultFormatter(Formatter):
             return None
 
 
-class AuthorizationError(Exception):
-    """Application error."""
-    pass
-
-
 def fetch_access_token(client_key, client_secret):
     """Fetch twitter access token using oauthlib."""
 
