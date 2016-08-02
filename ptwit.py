@@ -9,6 +9,8 @@ import errno
 from functools import update_wrapper
 from datetime import datetime
 from string import Formatter
+import json
+import functools
 
 try:
     import ConfigParser
@@ -40,31 +42,28 @@ __license__ = 'MIT'
 __copyright__ = 'Copyright (c) 2012-2016 Tao Peng'
 
 
+PY2 = sys.version_info[0] == 2
+
 _MAX_COUNT = 200
 
-FORMAT_TWEET = u'''\t\033[7m {user[name]} \033[0m (@{user[screen_name]})
+FORMAT_TWEET = u'''\t{_username_} (@{user[screen_name]})
 \t{text}
-\t\033[35m{time_ago}\033[0m
+\t{_time_ago_}
 '''
 
-FORMAT_SEARCH = u'''\t\033[7m {user[screen_name]} \033[0m
+FORMAT_MESSAGE = u'''\t{_sender_screen_name_}
 \t{text}
-\t\033[35m{time_ago}\033[0m
+\t{_time_ago_}
 '''
 
-FORMAT_MESSAGE = u'''\t\033[7m {sender_screen_name} \033[0m
-\t{text}
-\t\033[35m{time_ago}\033[0m
-'''
-
-FORMAT_USER = u'''\033[7m {name} \033[0m (@{screen_name})
-Location:     {location}
-URL:          {url}
-Followers:    {followers_count}
-Following:    {friends_count}
-Status:       {statuses_count}
-Description:  {description}
-Joined:       {0:%Y-%m-%d} ({time_ago})
+FORMAT_USER = u'''\t{_username_} (@{screen_name})
+\tLocation:     {location}
+\tURL:          {url}
+\tFollowers:    {followers_count}
+\tFollowing:    {friends_count}
+\tStatus:       {statuses_count}
+\tDescription:  {description}
+\tJoined:       {0:%Y-%m-%d} ({_time_ago_})
 '''
 
 REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token'
@@ -258,7 +257,8 @@ def mkdir(path):
 
 @click.group(cls=DefaultGroup, default='timeline', default_if_no_args=True)
 @click.option('--account')
-@click.option('--format')
+@click.option('--text', 'format', flag_value='text', default=True)
+@click.option('--json', 'format', flag_value='json')
 @click.pass_context
 def ptwit(ctx, account, format):
     config_dir = click.get_app_dir('ptwit')
@@ -335,66 +335,115 @@ def parse_time(entry):
     return datetime.strptime(entry, '%a %b %d %H:%M:%S +0000 %Y')
 
 
-def print_tweet(ctx, tweet):
+def format_tweet_as_text(tweet):
     tweet = tweet.AsDict()
-    tweet['text'] = html_unescape(tweet['text'])
+    assert not any(key[0] == '_' and key[-1] == '_' for key in tweet.keys())
+
+    username = tweet['user']['name']
+    tweet['_username_'] = click.style(' ' + username + ' ', bg='black', fg='white')
     created_at = parse_time(tweet['created_at'])
-    format_string = FORMAT_TWEET
-    click.echo(_formatter.format(format_string,
-                                 created_at,
-                                 time_ago=time_ago(created_at),
-                                 **tweet))
+    tweet['_time_ago_'] = click.style(time_ago(created_at), fg='red')
+    tweet['text'] = html_unescape(tweet['text'])
+
+    return _formatter.format(FORMAT_TWEET, created_at, **tweet)
+
+
+def format_tweet_as_json(tweet):
+    return json.dumps(tweet.AsDict())
+
+
+def print_tweet(ctx, tweet):
+    format = ctx.obj['format']
+    if format == 'json':
+        click.echo(format_tweet_as_json(tweet))
+    elif format == 'text':
+        click.echo(format_tweet_as_text(tweet))
 
 
 def print_tweets(ctx, tweets):
-    for tweet in tweets:
-        print_tweet(ctx, tweet)
+    format = ctx.obj['format']
+    if format == 'json':
+        output = '\n'.join([format_tweet_as_json(tweet) for tweet in tweets])
+        click.echo(output)
+    elif format == 'text':
+        output = '\n'.join([format_tweet_as_text(tweet) for tweet in tweets])
+        if len(tweets) <= 1:
+            click.echo(output)
+        else:
+            click.echo_via_pager(output)
+
+
+def format_user_as_text(user):
+    user = user.AsDict()
+    assert not any(key[0] == '_' and key[-1] == '_' for key in user.keys())
+
+    created_at = parse_time(user['created_at'])
+    user['_name_'] = click.style(' ' + user['name'] + ' ', fg='white', bg='black')
+    user['_time_ago_'] = time_ago(created_at)
+
+    return _formatter.format(FORMAT_USER, created_at, **user)
+
+
+def format_user_as_json(user):
+    return json.dumps(user.AsDict())
 
 
 def print_user(ctx, user):
-    user = user.AsDict()
-    created_at = parse_time(user['created_at'])
-    format_string = FORMAT_USER
-    click.echo(_formatter.format(format_string,
-                                 created_at,
-                                 time_ago=time_ago(created_at),
-                                 **user))
+    format == ctx.obj['format']
+    if format == 'text':
+        click.echo(format_user_as_text(user))
+    elif format == 'json':
+        click.echo(format_user_as_json(user))
 
 
 def print_users(ctx, users):
-    for user in users:
-        print_user(ctx, user)
+    format = ctx.obj['format']
+    if format == 'text':
+        output = '\n'.join([format_user_as_text(user) for user in users])
+        if len(users) <= 1:
+            click.echo(output)
+        else:
+            click.echo_via_pager(output)
+    elif format == 'json':
+        output = '\n'.join([format_user_as_json(user) for user in users])
+        click.echo(output)
 
 
-def print_search(ctx, tweet):
-    tweet = tweet.AsDict()
-    tweet['text'] = html_unescape(tweet['text'])
-    created_at = parse_time(tweet['created_at'])
-    format_string = FORMAT_SEARCH
-    click.echo(_formatter.format(format_string,
-                                 created_at,
-                                 time_ago=time_ago(created_at),
-                                 **tweet))
+def format_message_as_text(message):
+    message = message.AsDict()
+    assert not any(key[0] == '_' and key[-1] == '_' for key in message.keys())
+
+    created_at = parse_time(message['created_at'])
+    message['_time_ago_'] = click.style(time_ago(created_at), fg='red')
+    message['_sender_screen_name_'] = click.style(' ' + message['sender_screen_name'] + ' ',
+                                                  fg='white', bg='black')
+
+    return _formatter.format(FORMAT_MESSAGE, created_at, **message)
 
 
-def print_searches(ctx, searches):
-    for search in searches:
-        print_search(ctx, search)
+def format_message_as_json(message):
+    return json.dumps(message.AsDict())
 
 
 def print_message(ctx, message):
-    message = message.AsDict()
-    created_at = parse_time(message['created_at'])
-    format_string = FORMAT_MESSAGE
-    click.echo(_formatter.format(format_string,
-                                 created_at,
-                                 time_ago=time_ago(created_at),
-                                 **message))
+    format == ctx.obj['format']
+    if format == 'text':
+        click.echo(format_message_as_text(message))
+    elif format == 'json':
+        click.echo(format_message_as_json(message))
 
 
 def print_messages(ctx, messages):
-    for message in messages:
-        print_message(ctx, message)
+    format = ctx.obj['format']
+    if format == 'text':
+        output = '\n'.join([format_message_as_text(message) for message in messages])
+        if len(messages) <= 1:
+            click.echo(output)
+        else:
+            click.echo_via_pager(output)
+    elif format == 'json':
+        output = '\n'.join([format_user_as_json(message) for message in messages])
+        click.echo(output)
 
 
 def read_text(words):
@@ -547,7 +596,7 @@ def faves(api, user):
 
 @ptwit.command()
 @click.argument('term', nargs=-1)
-@handle_results(print_searches)
+@handle_results(print_tweets)
 @pass_obj_args('api')
 def search(api, term):
     """Search Twitter."""
