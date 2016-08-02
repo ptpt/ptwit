@@ -36,10 +36,6 @@ from requests_oauthlib import OAuth1Session
 
 
 __version__ = '0.1'
-__author__ = 'Tao Peng'
-__license__ = 'MIT'
-__copyright__ = 'Copyright (c) 2012-2016 Tao Peng'
-
 
 PY2 = sys.version_info[0] == 2
 
