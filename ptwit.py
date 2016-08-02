@@ -416,7 +416,7 @@ def read_text(words):
     elif words:
         text = ' '.join(words)
         if not click.confirm('Post "{0}"?'.format(text)):
-            return ''
+            return None
     else:
         text = click.edit()
 
@@ -430,7 +430,7 @@ def read_text(words):
 def post(api, words):
     """Post a tweet."""
     text = read_text(words)
-    if not text.strip():
+    if not text or not text.strip():
         raise click.Abort()
     return api.PostUpdate(text)
 
@@ -514,7 +514,7 @@ def messages(api, count=None, since_id=None):
 def send(api, user, words):
     """Send a message to a user."""
     text = read_text(words)
-    if not text.strip():
+    if not text or not text.strip():
         raise click.Abort()
     return api.PostDirectMessage(text, screen_name=user)
 
