@@ -367,7 +367,9 @@ def print_tweets(ctx, tweets):
         click.echo(output)
     elif format == 'text':
         output = '\n'.join([format_tweet_as_text(tweet) for tweet in tweets])
-        if len(tweets) <= 1:
+        if not tweets:
+            pass
+        elif len(tweets) == 1:
             click.echo(output)
         else:
             click.echo_via_pager(output)
@@ -400,7 +402,9 @@ def print_users(ctx, users):
     format = ctx.obj['format']
     if format == 'text':
         output = '\n'.join([format_user_as_text(user) for user in users])
-        if len(users) <= 1:
+        if not users:
+            pass
+        elif len(users) == 1:
             click.echo(output)
         else:
             click.echo_via_pager(output)
@@ -437,7 +441,9 @@ def print_messages(ctx, messages):
     format = ctx.obj['format']
     if format == 'text':
         output = '\n'.join([format_message_as_text(message) for message in messages])
-        if len(messages) <= 1:
+        if not messages:
+            pass
+        elif len(messages) == 1:
             click.echo(output)
         else:
             click.echo_via_pager(output)
