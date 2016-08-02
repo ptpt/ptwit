@@ -10,6 +10,7 @@ from functools import update_wrapper
 from datetime import datetime
 from string import Formatter
 import json
+import re
 
 try:
     import ConfigParser
@@ -41,31 +42,6 @@ __version__ = '0.1'
 PY2 = sys.version_info[0] == 2
 
 MAX_COUNT = 200
-
-FORMAT_TWEET = '''\t{_username_} @{user[screen_name]}
-\t{_aligned_text_}
-\t{_time_ago_}
-'''
-
-FORMAT_RETWEET = '''\t{_username_} @{user[screen_name]} ({_first_username_} Retweeted)
-\t{_aligned_text_}
-\t{_time_ago_}
-'''
-
-FORMAT_MESSAGE = '''\t{_sender_screen_name_}
-\t{_aligned_text_}
-\t{_time_ago_}
-'''
-
-FORMAT_USER = '''\t{_username_} (@{screen_name})
-\tLocation:     {location}
-\tURL:          {url}
-\tFollowers:    {followers_count}
-\tFollowing:    {friends_count}
-\tStatus:       {statuses_count}
-\tDescription:  {_aligned_description_}
-\tJoined:       {0:%Y-%m-%d} ({_time_ago_})
-'''
 
 
 class DefaultFormatter(Formatter):
@@ -298,6 +274,28 @@ def align_text(text, margin='', skip_first_line=False):
     return '\n'.join(aligned_lines)
 
 
+def expand_urls(text, urls):
+    # Before and after shorten url, it must not be ASCII chars
+    before = r'(?<![a-zA-z0-9])'
+    after = r'(?![a-zA-Z0-9])'
+    for url in urls:
+        short_url, expanded_url = url
+        text = re.sub(before + re.escape(short_url) + after, expanded_url, text)
+    return text
+
+
+FORMAT_TWEET = '''\t{_username_} @{user[screen_name]}
+\t{_aligned_text_}
+\t{_time_ago_}
+'''
+
+
+FORMAT_RETWEET = '''\t{_username_} @{user[screen_name]} ({_first_username_} Retweeted)
+\t{_aligned_text_}
+\t{_time_ago_}
+'''
+
+
 def format_tweet_as_text(tweet):
     tweet = tweet.AsDict()
     assert not any(key[0] == '_' and key[-1] == '_' for key in tweet.keys())
@@ -311,6 +309,9 @@ def format_tweet_as_text(tweet):
     created_at = parse_time(tweet['created_at'])
     tweet['_time_ago_'] = click.style(time_ago(created_at), fg='red')
     text = html_unescape(tweet['text'])
+    urls = tweet.get('urls', []) + tweet.get('media', [])
+    url_pairs = [(url['url'], url['expanded_url']) for url in urls]
+    text = expand_urls(text, url_pairs)
     tweet['_aligned_text_'] = align_text(text, margin='\t', skip_first_line=True)
 
     return _formatter.format(FORMAT_RETWEET if retweet else FORMAT_TWEET,
@@ -343,6 +344,17 @@ def print_tweets(ctx, tweets):
             click.echo(output)
         else:
             click.echo_via_pager(output)
+
+
+FORMAT_USER = '''\t{_username_} (@{screen_name})
+\tLocation:     {location}
+\tURL:          {url}
+\tFollowers:    {followers_count}
+\tFollowing:    {friends_count}
+\tStatus:       {statuses_count}
+\tDescription:  {_aligned_description_}
+\tJoined:       {0:%Y-%m-%d} ({_time_ago_})
+'''
 
 
 def format_user_as_text(user):
@@ -385,6 +397,12 @@ def print_users(ctx, users):
     elif format == 'json':
         output = '\n'.join([format_user_as_json(user) for user in users])
         click.echo(output)
+
+
+FORMAT_MESSAGE = '''\t{_sender_screen_name_}
+\t{_aligned_text_}
+\t{_time_ago_}
+'''
 
 
 def format_message_as_text(message):
