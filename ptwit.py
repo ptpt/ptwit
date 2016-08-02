@@ -39,7 +39,7 @@ __version__ = '0.1'
 
 PY2 = sys.version_info[0] == 2
 
-_MAX_COUNT = 200
+MAX_COUNT = 200
 
 FORMAT_TWEET = u'''\t{_username_} (@{user[screen_name]})
 \t{text}
@@ -421,7 +421,7 @@ def post(api, words):
 
 
 @ptwit.command()
-@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
+@click.option('--count', '-c', default=MAX_COUNT, type=click.INT)
 @click.argument('users', nargs=-1)
 @handle_results(print_tweets)
 @pass_obj_args('api')
@@ -444,7 +444,7 @@ def tweets(api, users, count=None):
 def timeline(api, count=None, since_id=None):
     """List timeline."""
     if count is None:
-        count = _MAX_COUNT
+        count = MAX_COUNT
     else:
         since_id = None
     return api.GetHomeTimeline(count=count, since_id=since_id)
@@ -458,7 +458,7 @@ def timeline(api, count=None, since_id=None):
 def mentions(api, count=None, since_id=None):
     """List mentions."""
     if count is None:
-        count = _MAX_COUNT
+        count = MAX_COUNT
     else:
         since_id = None
     return api.GetMentions(count=count, since_id=since_id)
@@ -472,21 +472,21 @@ def mentions(api, count=None, since_id=None):
 def replies(api, count=None, since_id=None):
     """List replies."""
     if count is None:
-        count = _MAX_COUNT
+        count = MAX_COUNT
     else:
         since_id = None
     return api.GetReplies(count=count, since_id=since_id)
 
 
 @ptwit.command()
-@click.option('--count', '-c', default=_MAX_COUNT, type=click.INT)
+@click.option('--count', '-c', default=MAX_COUNT, type=click.INT)
 @handle_results(print_messages, save_since_id_at('messages_since_id'))
 @pass_since_id_from('messages_since_id')
 @pass_obj_args('api')
 def messages(api, count=None, since_id=None):
     """List messages."""
     if count is None:
-        count = _MAX_COUNT
+        count = MAX_COUNT
     else:
         since_id = None
     return api.GetDirectMessages(count=count, since_id=since_id)
