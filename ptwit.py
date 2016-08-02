@@ -527,21 +527,21 @@ def followers(api, user):
 
 
 @ptwit.command()
-@click.argument('user')
-@handle_results(print_user)
+@click.argument('users', nargs=-1)
+@handle_results(print_users)
 @pass_obj_args('api')
-def follow(api, user):
-    """Follow a user."""
-    return api.CreateFriendship(user)
+def follow(api, users):
+    """Follow users."""
+    return [api.CreateFriendship(screen_name=user) for user in users]
 
 
 @ptwit.command()
-@click.argument('user')
-@handle_results(print_user)
+@click.argument('users', nargs=-1, required=True)
+@handle_results(print_users)
 @pass_obj_args('api')
-def unfollow(api, user):
-    """Unfollow a user."""
-    return api.DestroyFriendship(user)
+def unfollow(api, users):
+    """Unfollow users."""
+    return [api.DestroyFriendship(screen_name=user) for user in users]
 
 
 @ptwit.command()
