@@ -211,9 +211,12 @@ def mkdir(path):
 
 
 @click.group(cls=DefaultGroup, default='timeline', default_if_no_args=True)
-@click.option('--account')
-@click.option('--text', 'format', flag_value='text', default=True)
-@click.option('--json', 'format', flag_value='json')
+@click.option('--account',
+              help='Use this account instead of the default.')
+@click.option('--text', 'format', flag_value='text', default=True,
+              help='Print entries as human-readable text.')
+@click.option('--json', 'format', flag_value='json',
+              help='Print entires as JSON objects.')
 @click.pass_context
 def ptwit(ctx, account, format):
     config_dir = click.get_app_dir('ptwit')
