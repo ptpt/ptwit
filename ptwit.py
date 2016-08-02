@@ -200,7 +200,7 @@ def mkdir(path):
 
 
 @click.group(cls=DefaultGroup, default='timeline', default_if_no_args=True)
-@click.option('--account',
+@click.option('--account', '-a',
               help='Use this account instead of the default one.')
 @click.option('--text', 'format', flag_value='text', default=True,
               help='Print entries as human-readable text.')
