@@ -382,7 +382,7 @@ def format_user_as_text(user):
     assert not any(key[0] == '_' and key[-1] == '_' for key in user.keys())
 
     created_at = parse_time(user['created_at'])
-    user['_name_'] = click.style(' ' + user['name'] + ' ', fg='white', bg='black')
+    user['_username_'] = click.style(' ' + user['name'] + ' ', fg='white', bg='black')
     user['_time_ago_'] = time_ago(created_at)
 
     return _formatter.format(FORMAT_USER, created_at, **user)
