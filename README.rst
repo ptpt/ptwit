@@ -26,134 +26,54 @@ To install ``ptwit``, simply:
 
 .. code-block:: bash
 
-    $ pip install ptwit
+    pip install ptwit
 
 
 Authorization
 -------------
 
-For the first time you run ``ptwit`` command, you will be asked for
+For the first time you run ``ptwit`` command, ``ptwit`` will ask for
 your Twitter application information, which you can find at
 `https://dev.twitter.com/apps`. If you don't have one, register at
 `https://dev.twitter.com/apps/new`.
 
-You can also manually set your Twitter application information via the
-commands below:
+``ptwit`` supports multiple Twitter accounts. You can easily log into
+a new account, or switch between accounts you've already authorized:
 
 .. code-block:: bash
 
-    $ ptwit config -g set consumer_key "CONSUMER KEY HERE"
-    $ ptwit config -g set consumer_secret "CONSUMER SECRET HERE"
+    ptwit login ACCOUNT
 
-``ptwit`` supports multiple Twitter accounts. You can always use the
-``login`` command to log into a new account:
-
-.. code-block:: bash
-
-    $ ptwit login
-
-The command above will take you to the Twitter authorization page, and
-ask you to give a name for this account.
-
-You can easily switch between accounts you've already authorized:
-
-.. code-block:: bash
-
-    $ ptwit login ACCOUNT
-
-To remove an account from your computer, use this command:
-
-.. code-block:: bash
-
-    $ ptwit config remove ACCOUNT
-
-
-Twitter Commands
+Usage
 ----------------
 
-Get home timeline
-~~~~~~~~~~~~~~~~~
-
 .. code-block:: bash
 
-    $ ptwit timeline            # latest tweets
-    $ ptwit timeline -c 20      # latest 20 tweets
+   Usage: ptwit.py [OPTIONS] COMMAND [ARGS]...
 
-Get tweets of a Twitter user
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Options:
+     --account TEXT  Use this account instead of the default one.
+     --text          Print entries as human-readable text.
+     --json          Print entires as JSON objects.
+     --help          Show this message and exit.
 
-.. code-block:: bash
-
-    $ ptwit tweets              # list your tweets
-    $ ptwit tweets USER         # list someone's tweets
-
-Get mentions or replies
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit mentions
-    $ ptwit replies
-
-Post a new tweet
-~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit post "YOUR STATUS"
-    $ ptwit post < tweet.txt
-
-Send direct message
-~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit send USER "YOUR MESSAGE"
-    $ cat message.txt | ptwit send USER
-
-List followings
-~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit followings
-
-List followers
-~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit followers
-
-Follow or unfollow Twitter users
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit follow USER
-    $ ptwit unfollow USER
-
-List your favorite tweets
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit faves
-
-Get a Twitter user's information
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit whois USER
-
-Search tweets
-~~~~~~~~~~~~~
-
-.. code-block:: bash
-
-    $ ptwit search TERM
-
+   Commands:
+     timeline*   List timeline.
+     accounts    List all accounts.
+     faves       List favourite tweets of a user.
+     follow      Follow a user.
+     followers   List your followers.
+     followings  List who you are following.
+     login       Log into an account.
+     mentions    List mentions.
+     messages    List messages.
+     post        Post a tweet.
+     replies     List replies.
+     search      Search Twitter.
+     send        Send a message to a user.
+     tweets      List user's tweets.
+     unfollow    Unfollow a user.
+     whois       Show user profiles.
 
 LICENSE
 -------
