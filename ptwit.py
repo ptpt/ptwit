@@ -421,8 +421,7 @@ def read_text(words):
         text = click.get_text_stream('stdin').read()
     elif words:
         text = ' '.join(words)
-        if not click.confirm('Post "{0}"?'.format(text)):
-            return None
+        click.confirm('Post "{0}"?'.format(text), abort=True)
     else:
         text = click.edit()
 
