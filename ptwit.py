@@ -288,21 +288,20 @@ def expand_urls(text, urls):
     # shorten url must not surrounded by ASCII chars
     before = r'(?<![a-zA-z0-9])'
     after = r'(?![a-zA-Z0-9])'
-    for url in urls:
-        shorten_url, expanded_url = url
+    for shorten_url, expanded_url in dict(urls).items():
         text = re.sub(before + re.escape(shorten_url) + after, expanded_url, text)
     return text
 
 
 def decorate_user_mentions(text, mentions, *args, **kwargs):
-    for mention in mentions:
+    for mention in set(mentions):
         text = re.sub('@' + re.escape(mention) + r'(?![a-zA-Z0-9_])',
                       click.style('@' + mention, *args, **kwargs), text)
     return text
 
 
 def decorate_hashtags(text, hashtags, *args, **kwargs):
-    for hashtag in hashtags:
+    for hashtag in set(hashtags):
         text = re.sub('#' + re.escape(hashtag) + r'(?!\w)',
                       click.style('#' + hashtag, *args, **kwargs), text)
     return text
