@@ -289,8 +289,22 @@ def expand_urls(text, urls):
     before = r'(?<![a-zA-z0-9])'
     after = r'(?![a-zA-Z0-9])'
     for url in urls:
-        short_url, expanded_url = url
-        text = re.sub(before + re.escape(short_url) + after, expanded_url, text)
+        shorten_url, expanded_url = url
+        text = re.sub(before + re.escape(shorten_url) + after, expanded_url, text)
+    return text
+
+
+def decorate_user_mentions(text, mentions, *args, **kwargs):
+    for mention in mentions:
+        text = re.sub('@' + re.escape(mention) + r'(?![a-zA-Z0-9_])',
+                      click.style('@' + mention, *args, **kwargs), text)
+    return text
+
+
+def decorate_hashtags(text, hashtags, *args, **kwargs):
+    for hashtag in hashtags:
+        text = re.sub('#' + re.escape(hashtag) + r'(?!\w)',
+                      click.style('#' + hashtag, *args, **kwargs), text)
     return text
 
 
@@ -323,10 +337,19 @@ def format_tweet_as_text(tweet):
     created_at = parse_time(tweet['created_at'])
     tweet['_time_ago_'] = click.style(time_ago(created_at), fg='red')
 
+    # Decorate text
     text = html_unescape(tweet['text'])
+
     urls = tweet.get('urls', []) + tweet.get('media', [])
     url_pairs = [(url['url'], url['expanded_url']) for url in urls]
     text = expand_urls(text, url_pairs)
+
+    mentions = [mention['screen_name'] for mention in tweet.get('user_mentions', [])]
+    text = decorate_user_mentions(text, mentions, underline=True)
+
+    hashtags = [hashtag['text'] for hashtag in tweet.get('hashtags', [])]
+    text = decorate_hashtags(text, hashtags, underline=True)
+
     tweet['_aligned_text_'] = align_text(text, margin='\t', skip_first_line=True)
 
     return _text_formatter.format(FORMAT_RETWEET if retweet else FORMAT_TWEET,
