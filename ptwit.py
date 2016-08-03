@@ -202,9 +202,9 @@ def ptwit(ctx, account, format):
     if account is None:
         account = config.get('current_account')
 
-    ctx.obj = {'config': config,
-               'account': account,
-               'format': format}
+    # Store the current account or user-specified account in context
+    # object
+    ctx.obj = {'config': config, 'account': account, 'format': format}
 
     if ctx.invoked_subcommand not in ('accounts', 'login'):
         ctx.obj['api'] = _login(config, account)
@@ -215,6 +215,12 @@ def save_since_id_at(option_name):
         if results:
             config = ctx.obj['config']
             account = ctx.obj['account']
+            # If no account stored in the beginning, we read current
+            # account from config
+            if not account:
+                account = config.get('current_account')
+            if not account:
+                raise RuntimeError('Unable to find account anywhere')
             config.set(option_name, results[0].id, account=account).save()
     return save_since_id
 
@@ -253,6 +259,10 @@ def pass_since_id_from(option_name):
         def new_func(ctx, *args, **kwargs):
             config = ctx.obj['config']
             account = ctx.obj['account']
+            if not account:
+                account = config.get('current_account')
+            if not account:
+                raise RuntimeError('Unable to find account anywhere')
             kwargs['since_id'] = config.get(option_name, account=account)
             return ctx.invoke(func, *args, **kwargs)
         return update_wrapper(new_func, func)
@@ -757,7 +767,7 @@ def _login(config, account=None):
 
     if not account:
         account = choose_account_name(config, user.screen_name)
-        assert account
+        assert account, 'an account name must be chosen'
 
     # Update consumer pair locally
     if config.get('consumer_key', account=account):
