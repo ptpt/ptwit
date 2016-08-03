@@ -260,7 +260,7 @@ def pass_since_id_from(option_name):
     return wrapper
 
 
-_formatter = DefaultFormatter()
+_text_formatter = DefaultFormatter()
 
 
 def parse_time(entry):
@@ -275,7 +275,7 @@ def align_text(text, margin='', skip_first_line=False):
 
 
 def expand_urls(text, urls):
-    # Before and after shorten url, it must not be ASCII chars
+    # shorten url must not surrounded by ASCII chars
     before = r'(?<![a-zA-z0-9])'
     after = r'(?![a-zA-Z0-9])'
     for url in urls:
@@ -299,24 +299,29 @@ FORMAT_RETWEET = '''\t{_username_} @{user[screen_name]} ({_first_username_} Retw
 def format_tweet_as_text(tweet):
     tweet = tweet.AsDict()
     assert not any(key[0] == '_' and key[-1] == '_' for key in tweet.keys())
+
     retweet = tweet.get('retweeted_status')
     if retweet:
+        assert not any(key[0] == '_' and key[-1] == '_' for key in retweet.keys())
         retweet['_first_username_'] = tweet['user']['name']
         tweet = retweet
 
     username = tweet['user']['name']
-    tweet['_username_'] = click.style(' ' + username + ' ', bg='black', fg='white')
+    tweet['_username_'] = click.style(' ' + username + ' ',
+                                      fg='white', bg='black')
+
     created_at = parse_time(tweet['created_at'])
     tweet['_time_ago_'] = click.style(time_ago(created_at), fg='red')
+
     text = html_unescape(tweet['text'])
     urls = tweet.get('urls', []) + tweet.get('media', [])
     url_pairs = [(url['url'], url['expanded_url']) for url in urls]
     text = expand_urls(text, url_pairs)
     tweet['_aligned_text_'] = align_text(text, margin='\t', skip_first_line=True)
 
-    return _formatter.format(FORMAT_RETWEET if retweet else FORMAT_TWEET,
-                             created_at,
-                             **tweet)
+    return _text_formatter.format(FORMAT_RETWEET if retweet else FORMAT_TWEET,
+                                  created_at,
+                                  **tweet)
 
 
 def format_tweet_as_json(tweet):
@@ -364,14 +369,18 @@ def format_user_as_text(user):
     assert not any(key[0] == '_' and key[-1] == '_' for key in user.keys())
 
     created_at = parse_time(user['created_at'])
-    user['_username_'] = click.style(' ' + user['name'] + ' ', fg='white', bg='black')
+
+    user['_username_'] = click.style(' ' + user['name'] + ' ',
+                                     fg='white', bg='black')
+
     user['_time_ago_'] = time_ago(created_at)
+
     description = user.get('description')
     if description is not None:
         margin = '\t' + ' ' * len('Description:  ')
         user['_aligned_description_'] = align_text(description, margin=margin, skip_first_line=True)
 
-    return _formatter.format(FORMAT_USER, created_at, **user)
+    return _text_formatter.format(FORMAT_USER, created_at, **user)
 
 
 def format_user_as_json(user):
@@ -415,11 +424,13 @@ def format_message_as_text(message):
 
     created_at = parse_time(message['created_at'])
     message['_time_ago_'] = click.style(time_ago(created_at), fg='red')
+
     message['_sender_screen_name_'] = click.style(' ' + message['sender_screen_name'] + ' ',
                                                   fg='white', bg='black')
+
     message['_aligned_text_'] = align_text(message['text'], margin='\t', skip_first_line=True)
 
-    return _formatter.format(FORMAT_MESSAGE, created_at, **message)
+    return _text_formatter.format(FORMAT_MESSAGE, created_at, **message)
 
 
 def format_message_as_json(message):
@@ -483,10 +494,6 @@ def get_latest_tweet(api):
         return None
 
 
-def edit_tweet(tweet):
-    return click.edit(tweet.text)
-
-
 @ptwit.command()
 @click.option('--drop', '-d', default=False, is_flag=True,
               help='Delete the latest tweet.')
@@ -503,7 +510,7 @@ def pop(api, drop):
     if drop:
         return api.DestroyStatus(status_id=latest_tweet.id)
 
-    text = edit_tweet(latest_tweet)
+    text = click.edit(latest_tweet.text)
 
     # Do nothing if as you exited without saving
     if text is None:
@@ -716,13 +723,13 @@ def _login(config, account=None):
     consumer_key = config.get('consumer_key', account=account) or config.get('consumer_key')
     consumer_secret = config.get('consumer_secret', account=account) or config.get('consumer_secret')
 
-    token_key = config.get('token_key', account=account)
-    token_secret = config.get('token_secret', account=account)
-
     if not (consumer_key and consumer_secret):
         consumer_key = click.prompt('Consumer key').strip()
         consumer_secret = click.prompt('Consumer secret', hide_input=True).strip()
         assert consumer_key and consumer_secret
+
+    token_key = config.get('token_key', account=account)
+    token_secret = config.get('token_secret', account=account)
 
     if not (token_key and token_secret):
         if account:
@@ -752,12 +759,17 @@ def _login(config, account=None):
         account = choose_account_name(config, user.screen_name)
         assert account
 
+    # Update consumer pair locally
     if config.get('consumer_key', account=account):
         config.set('consumer_key', consumer_key, account=account)
     if config.get('consumer_secret', account=account):
         config.set('consumer_secret', consumer_secret, account=account)
+
+    # Update token pair locally
     config.set('token_key', token_key, account=account)
     config.set('token_secret', token_secret, account=account)
+
+    # Update current account
     config.set('current_account', account)
 
     config.save()
