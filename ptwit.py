@@ -324,6 +324,8 @@ def format_tweet_as_json(tweet):
 
 
 def print_tweet(ctx, tweet):
+    if not tweet:
+        return
     format = ctx.obj['format']
     if format == 'json':
         click.echo(format_tweet_as_json(tweet))
@@ -377,6 +379,8 @@ def format_user_as_json(user):
 
 
 def print_user(ctx, user):
+    if not user:
+        return
     format == ctx.obj['format']
     if format == 'text':
         click.echo(format_user_as_text(user))
@@ -423,6 +427,8 @@ def format_message_as_json(message):
 
 
 def print_message(ctx, message):
+    if not message:
+        return
     format == ctx.obj['format']
     if format == 'text':
         click.echo(format_message_as_text(message))
@@ -467,6 +473,51 @@ def post(api, words):
     if not text or not text.strip():
         raise click.Abort()
     return api.PostUpdate(text)
+
+
+def get_latest_tweet(api):
+    latest_tweet = api.GetUserTimeline(count=2, include_rts=False, exclude_replies=True)
+    if latest_tweet:
+        return latest_tweet[0]
+    else:
+        return None
+
+
+def edit_tweet(tweet):
+    return click.edit(tweet.text)
+
+
+@ptwit.command()
+@click.option('--drop', '-d', default=False, is_flag=True,
+              help='Delete the latest tweet.')
+@handle_results(print_tweet)
+@pass_obj_args('api')
+def pop(api, drop):
+    """Edit or edit the latest tweet."""
+    latest_tweet = get_latest_tweet(api)
+    if not latest_tweet:
+        click.echo('No tweet found.', err=True)
+        return None
+
+    # Delete the latest tweet
+    if drop:
+        return api.DestroyStatus(status_id=latest_tweet.id)
+
+    text = edit_tweet(latest_tweet)
+
+    # Do nothing if as you exited without saving
+    if text is None:
+        return latest_tweet
+
+    # Delete the latest tweet if content is empty
+    text = text.strip()
+    if not text:
+        return api.DestroyStatus(status_id=latest_tweet.id)
+
+    # Post new tweet first and then delete the old tweet
+    tweet = api.PostUpdate(text)
+    api.DestroyStatus(status_id=latest_tweet.id)
+    return tweet
 
 
 @ptwit.command()
