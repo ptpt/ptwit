@@ -52,27 +52,28 @@ Usage
    Usage: ptwit.py [OPTIONS] COMMAND [ARGS]...
 
    Options:
-     --account TEXT  Use this account instead of the default one.
-     --text          Print entries as human-readable text.
-     --json          Print entires as JSON objects.
-     --help          Show this message and exit.
+     -a, --account TEXT  Use this account instead of the default one.
+     --text              Print entries as human-readable text.
+     --json              Print entires as JSON objects.
+     --help              Show this message and exit.
 
    Commands:
      timeline*   List timeline.
      accounts    List all accounts.
      faves       List favourite tweets of a user.
-     follow      Follow a user.
+     follow      Follow users.
      followers   List your followers.
      followings  List who you are following.
      login       Log into an account.
      mentions    List mentions.
      messages    List messages.
+     pop         Edit or delete the latest tweet.
      post        Post a tweet.
      replies     List replies.
      search      Search Twitter.
      send        Send a message to a user.
      tweets      List user's tweets.
-     unfollow    Unfollow a user.
+     unfollow    Unfollow users.
      whois       Show user profiles.
 
 LICENSE
