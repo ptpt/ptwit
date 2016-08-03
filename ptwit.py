@@ -533,7 +533,7 @@ def get_latest_tweet(api):
 @handle_results(print_tweet)
 @pass_obj_args('api')
 def pop(api, drop):
-    """Edit or edit the latest tweet."""
+    """Edit or delete the latest tweet."""
     latest_tweet = get_latest_tweet(api)
     if not latest_tweet:
         click.echo('No tweet found.', err=True)
