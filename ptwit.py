@@ -37,7 +37,7 @@ from requests_oauthlib import OAuth1Session
 from requests_oauthlib.oauth1_session import TokenRequestDenied
 
 
-__version__ = '0.1'
+__version__ = '0.1.1'
 
 PY2 = sys.version_info[0] == 2
 
