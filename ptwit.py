@@ -320,7 +320,7 @@ def format_tweet_as_text(tweet):
 
 
 def format_tweet_as_json(tweet):
-    return json.dumps(tweet.AsDict())
+    return json.dumps(tweet.AsDict(), ensure_ascii=False)
 
 
 def print_tweet(ctx, tweet):
@@ -375,7 +375,7 @@ def format_user_as_text(user):
 
 
 def format_user_as_json(user):
-    return json.dumps(user.AsDict())
+    return json.dumps(user.AsDict(), ensure_ascii=False)
 
 
 def print_user(ctx, user):
@@ -423,7 +423,7 @@ def format_message_as_text(message):
 
 
 def format_message_as_json(message):
-    return json.dumps(message.AsDict())
+    return json.dumps(message.AsDict(), ensure_ascii=False)
 
 
 def print_message(ctx, message):
