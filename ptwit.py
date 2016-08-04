@@ -689,13 +689,14 @@ def faves(api, user):
 
 
 @ptwit.command()
+@click.option('--count', '-c', default=MAX_COUNT)
 @click.argument('term', nargs=-1)
 @handle_results(print_tweets)
 @pass_obj_args('api')
-def search(api, term):
+def search(api, count, term):
     """Search Twitter."""
     term = ' '.join(term).encode('utf-8')
-    return api.GetSearch(term=term)
+    return api.GetSearch(term=term, count=count)
 
 
 @ptwit.command()
