@@ -695,7 +695,10 @@ def faves(api, user):
 @pass_obj_args('api')
 def search(api, count, term):
     """Search Twitter."""
-    term = ' '.join(term).encode('utf-8')
+    if term:
+        term = ' '.join(term).encode('utf-8')
+    else:
+        term = click.prompt('Search')
     return api.GetSearch(term=term, count=count)
 
 
