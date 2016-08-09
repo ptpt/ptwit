@@ -385,7 +385,7 @@ def print_tweets(ctx, tweets):
             click.echo_via_pager(output)
 
 
-FORMAT_USER = '''\t{_username_} (@{screen_name})
+FORMAT_USER = '''\t{_username_} @{screen_name}
 \tLocation:     {location}
 \tURL:          {url}
 \tFollowers:    {followers_count}
