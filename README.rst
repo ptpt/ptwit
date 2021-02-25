@@ -26,7 +26,7 @@ To install ``ptwit``, simply:
 
 .. code-block:: bash
 
-    pip install ptwit
+    python3 -m pip install ptwit
 
 
 Authorization
