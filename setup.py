@@ -13,16 +13,16 @@ def readme():
 
 
 setup(name='ptwit',
-      version='0.2',
+      version='0.3',
       description='A simple twitter command line client',
       long_description=readme(),
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 5 - Beta',
           'License :: OSI Approved :: MIT License',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
+          'Programming Language :: Python :: 3.9',
           'Environment :: Console',
           'Intended Audience :: End Users/Desktop',
           'Topic :: Utilities'],
