@@ -490,7 +490,7 @@ def read_text(words: T.List[str]) -> str:
         text = " ".join(words)
         click.confirm(f'Post "{text}"?', abort=True)
     else:
-        text = click.edit()
+        text = click.edit() or ""
 
     return text
 
