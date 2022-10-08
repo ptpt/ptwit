@@ -1,3 +1,4 @@
 python-twitter
 click-default-group
 click
+requests_oauthlib
