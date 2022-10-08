@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import errno
-from functools import update_wrapper
-from datetime import datetime
-from string import Formatter
-import json
-import re
 import configparser
-from html import unescape as html_unescape
-from urllib.parse import parse_qsl
+import json
+import os
+import re
+import sys
 import typing as T
+from datetime import datetime
+from functools import update_wrapper
+from html import unescape as html_unescape
+from string import Formatter
 
-import twitter
 import click
+import twitter
 from click_default_group import DefaultGroup
 from requests_oauthlib import OAuth1Session
 from requests_oauthlib.oauth1_session import TokenRequestDenied
 
 
-__version__ = "0.3"
+__VERSION__ = "0.3"
 MAX_COUNT = 200
 
 
@@ -161,17 +159,6 @@ class TwitterConfig:
         return self
 
 
-# http://stackoverflow.com/a/600612/114833
-def mkdir(path: str) -> None:
-    try:
-        os.makedirs(path)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
-
-
 @click.group(cls=DefaultGroup, default="timeline", default_if_no_args=True)
 @click.option("--account", "-a", help="Use this account instead of the default one.")
 @click.option(
@@ -187,7 +174,7 @@ def mkdir(path: str) -> None:
 @click.pass_context
 def ptwit(ctx: click.Context, account: T.Optional[str], format: str) -> None:
     config_dir = click.get_app_dir("ptwit")
-    mkdir(config_dir)
+    os.makedirs(config_dir, exist_ok=True)
     config = TwitterConfig(os.path.join(config_dir, "ptwit.conf"))
 
     if account is None:
@@ -503,7 +490,7 @@ def read_text(words: T.List[str]) -> str:
         text = " ".join(words)
         click.confirm(f'Post "{text}"?', abort=True)
     else:
-        text = click.edit()
+        text = click.edit() or ""
 
     return text
 
