@@ -13,15 +13,8 @@ class TestTwitterConfig(unittest.TestCase):
         os.remove(self.filename)
 
     def test_open(self):
-        filename = tempfile.mktemp()
-        # Create if config file does not exist
-        config = TwitterConfig(filename)
-        self.assertFalse(os.path.isfile(filename))
-        # If the path is a directory?
-        dirname = tempfile.mkdtemp()
-        config = TwitterConfig(dirname)
-        self.assertRaises(IOError, config.save)
-        os.removedirs(dirname)
+        TwitterConfig("./hello")
+        self.assertFalse(os.path.exists("./hello"))
 
     def test_set(self):
         config = TwitterConfig(self.filename)
